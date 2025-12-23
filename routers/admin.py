@@ -13,6 +13,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["admin"])
 templates = Jinja2Templates(directory="templates")
 
+plugin_loader = None
+
+
+def set_plugin_loader(loader):
+    global plugin_loader
+    plugin_loader = loader
+
 
 async def require_auth_admin(request: Request, session: Session = Depends(get_session)):
     from services.auth import get_current_user
@@ -38,6 +45,39 @@ async def require_auth_admin(request: Request, session: Session = Depends(get_se
             detail=f"Authentication failed: {str(e)}",
             headers={"Location": "/auth/login"}
         )
+
+
+@router.get("/plugins", summary="Plugin Dashboard", description="View all loaded game plugins and their status (Admin only)")
+async def list_plugins(
+    request: Request,
+    user: User = Depends(require_auth_admin),
+    session: Session = Depends(get_session)
+):
+    if not plugin_loader:
+        raise HTTPException(status_code=503, detail="Plugin system not initialized")
+    
+    plugins = plugin_loader.get_all_plugins()
+    return templates.TemplateResponse("admin/plugins.html", {
+        "request": request,
+        "user": user,
+        "plugins": plugins
+    })
+
+
+@router.post("/plugins/{plugin_id}/reload", summary="Reload Plugin", description="Reload a specific plugin (Admin only)")
+async def reload_plugin(
+    plugin_id: str,
+    user: User = Depends(require_auth_admin),
+    session: Session = Depends(get_session)
+):
+    if not plugin_loader:
+        raise HTTPException(status_code=503, detail="Plugin system not initialized")
+    
+    plugin = plugin_loader.reload_plugin(plugin_id)
+    if not plugin:
+        raise HTTPException(status_code=404, detail="Plugin not found")
+    
+    return RedirectResponse(url="/admin/plugins", status_code=303)
 
 
 @router.get("/games", summary="List Games", description="View all game images in the catalog (Admin only)")

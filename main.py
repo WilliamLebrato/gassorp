@@ -13,6 +13,7 @@ from models import GameImage
 from services.docker_manager import SidecarManager
 from services.lifecycle import LifecycleManager
 from routers import auth, dashboard, webhooks, admin
+from core.plugin_loader import PluginLoader
 
 load_dotenv()
 
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 docker_manager: SidecarManager = None
 lifecycle_manager: LifecycleManager = None
+plugin_loader: PluginLoader = None
 
 
 @asynccontextmanager
@@ -91,6 +93,16 @@ async def lifespan(app: FastAPI):
         logger.warning(f"Could not initialize Docker manager: {e}")
         docker_manager = None
         lifecycle_manager = None
+    
+    try:
+        from core.plugin_loader import PluginLoader
+        global plugin_loader
+        plugin_loader = PluginLoader(games_dir="games")
+        admin.set_plugin_loader(plugin_loader)
+        logger.info(f"Loaded {len(plugin_loader.get_all_plugins())} game plugins")
+    except Exception as e:
+        logger.error(f"Failed to load plugins: {e}")
+        plugin_loader = None
     
     yield
     

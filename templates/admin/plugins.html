@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Plugin Dashboard - GSP{% endblock %}
+
+{% block content %}
+<div class="p-8 pattern-bg">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gsp-text mb-2">Plugin Dashboard</h1>
+        <p class="text-gsp-text-muted">Game plugin health and status monitoring</p>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for plugin_id, plugin in plugins.items() %}
+        <div class="glass-card rounded-xl overflow-hidden">
+            <div class="p-6 border-b border-gsp-border flex justify-between items-start">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <h2 class="text-xl font-bold text-gsp-text">{{ plugin.display_name }}</h2>
+                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold
+                            {% if plugin.status.value == 'active' %} bg-green-100 text-green-700
+                            {% elif plugin.status.value == 'warning' %} bg-yellow-100 text-yellow-700
+                            {% elif plugin.status.value == 'error' %} bg-red-100 text-red-700
+                            {% else %} bg-gray-100 text-gray-700 {% endif %}">
+                            {% if plugin.status.value == 'active' %}🟢 Active
+                            {% elif plugin.status.value == 'warning' %}🟡 Warning
+                            {% elif plugin.status.value == 'error' %}🔴 Error
+                            {% else %}⚪ Draft {% endif %}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gsp-text-muted">ID: {{ plugin_id }}</p>
+                </div>
+                
+                {% if plugin.config %}
+                <div class="w-16 h-16 rounded-lg bg-gsp-light flex items-center justify-center overflow-hidden">
+                    <img src="{{ plugin.config.icon_url or '/static/img/default_icon.png' }}" 
+                         alt="{{ plugin.display_name }}" 
+                         class="w-full h-full object-cover"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <i data-lucide="gamepad-2" class="w-8 h-8 text-gsp-text-muted hidden"></i>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="p-6 space-y-4">
+                {% if plugin.error_message %}
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-sm text-red-700">{{ plugin.error_message }}</p>
+                </div>
+                {% endif %}
+                
+                {% if plugin.config %}
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gsp-text-muted">Docker Image</span>
+                        <span class="text-gsp-text font-mono text-xs">{{ plugin.config.docker_image }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gsp-text-muted">Default Port</span>
+                        <span class="text-gsp-text">{{ plugin.config.default_port }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gsp-text-muted">Protocol</span>
+                        <span class="text-gsp-text uppercase">{{ plugin.config.protocol }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gsp-text-muted">Min Resources</span>
+                        <span class="text-gsp-text">{{ plugin.config.min_cpu }} CPU / {{ plugin.config.min_ram }} RAM</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if plugin.test_results %}
+                <div class="bg-gsp-light rounded-lg p-4">
+                    <h4 class="text-sm font-semibold text-gsp-text mb-2">Self-Test Results</h4>
+                    <div class="space-y-1 text-xs">
+                        {% for key, value in plugin.test_results.details.items() %}
+                        <div class="flex justify-between">
+                            <span class="text-gsp-text-muted">{{ key }}:</span>
+                            <span class="{% if value == 'OK' or 'Found' in value %}text-green-700{% elif 'Missing' in value %}text-red-700{% else %}text-gsp-text{% endif %}">{{ value }}</span>
+                        </div>
+                        {% endfor %}
+                        {% if plugin.test_results.warnings %}
+                        {% for warning in plugin.test_results.warnings %}
+                        <div class="text-yellow-700 mt-2">⚠️ {{ warning }}</div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if plugin.status.value in ['active', 'warning'] %}
+                <div class="flex gap-2">
+                    <a href="/servers/create?game={{ plugin_id }}" class="flex-1 text-center px-4 py-2 bg-gsp-orange hover:bg-gsp-orange-dark rounded-lg text-white font-medium transition-colors">
+                        Deploy Server
+                    </a>
+                    <button onclick="reloadPlugin('{{ plugin_id }}')" class="px-4 py-2 bg-gsp-light hover:bg-gsp-gray rounded-lg text-gsp-text font-medium transition-colors">
+                        Reload
+                    </button>
+                </div>
+                {% elif plugin.status.value == 'draft' %}
+                <div class="text-center py-4 text-gsp-text-muted text-sm">
+                    <i data-lucide="file-code" class="w-8 h-8 mx-auto mb-2"></i>
+                    <p>Plugin in development</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if not plugins %}
+    <div class="flex flex-col items-center justify-center py-20 text-center">
+        <div class="w-32 h-32 mb-6 rounded-full bg-gsp-light flex items-center justify-center">
+            <i data-lucide="folder-open" class="w-16 h-16 text-gsp-text-muted"></i>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-gsp-text mb-2">No Plugins Found</h2>
+        <p class="text-gsp-text-muted mb-6 max-w-md">The games/ directory is empty. Add game plugins to enable server deployment.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+    
+    async function reloadPlugin(pluginId) {
+        try {
+            const response = await fetch(`/admin/plugins/${pluginId}/reload`, { method: 'POST' });
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Failed to reload plugin');
+            }
+        } catch (error) {
+            alert('Error reloading plugin: ' + error);
+        }
+    }
+</script>
+{% endblock %}

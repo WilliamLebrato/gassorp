@@ -1,0 +1,88 @@
+{
+  "display_name": "Minecraft Java Edition",
+  "docker_image": "itzg/minecraft-server:latest",
+  "default_port": 25565,
+  "min_ram": "1G",
+  "min_cpu": "0.5",
+  "protocol": "tcp",
+  "description": "Official Minecraft Java Edition server with support for multiple versions and modpacks.",
+  "icon_url": "/static/img/minecraft_icon.png",
+  "wallpaper_url": "/static/img/minecraft_wallpaper.jpg",
+  "env_vars_schema": {
+    "EULA": {
+      "type": "boolean",
+      "default": "TRUE",
+      "description": "Accept Minecraft EULA"
+    },
+    "VERSION": {
+      "type": "string",
+      "default": "latest",
+      "description": "Minecraft version to run"
+    },
+    "TYPE": {
+      "type": "string",
+      "default": "VANILLA",
+      "description": "Server type (VANILLA, PAPER, FORGE, etc.)"
+    },
+    "SEED": {
+      "type": "string",
+      "default": "",
+      "description": "World seed"
+    },
+    "MOTD": {
+      "type": "string",
+      "default": "Welcome to my Minecraft Server!",
+      "description": "Message of the Day"
+    },
+    "MAX_PLAYERS": {
+      "type": "integer",
+      "default": 20,
+      "description": "Maximum players"
+    },
+    "PVP": {
+      "type": "boolean",
+      "default": "true",
+      "description": "Enable PvP"
+    },
+    "DIFFICULTY": {
+      "type": "string",
+      "default": "normal",
+      "description": "Game difficulty (peaceful, easy, normal, hard)"
+    },
+    "WHITELIST": {
+      "type": "string",
+      "default": "",
+      "description": "Comma-separated whitelist of players"
+    },
+    "OPS": {
+      "type": "string",
+      "default": "",
+      "description": "Comma-separated list of server operators"
+    },
+    "SPAWN_PROTECTION": {
+      "type": "integer",
+      "default": 0,
+      "description": "Spawn protection radius"
+    },
+    "ALLOW_NETHER": {
+      "type": "boolean",
+      "default": "true",
+      "description": "Allow Nether dimension"
+    },
+    "ANNOUNCE_PLAYER_ACHIEVEMENTS": {
+      "type": "boolean",
+      "default": "true",
+      "description": "Announce player achievements"
+    },
+    "ENABLE_COMMAND_BLOCK": {
+      "type": "boolean",
+      "default": "false",
+      "description": "Enable command blocks"
+    },
+    "SNOOPER_ENABLED": {
+      "type": "boolean",
+      "default": "false",
+      "description": "Enable snooper"
+    }
+  }
+}
