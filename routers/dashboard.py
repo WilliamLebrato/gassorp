@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from models import User, Server, ServerCreate, GameImage, Transaction
@@ -8,12 +8,14 @@ from services.docker_manager import SidecarManager
 from services.lifecycle import LifecycleManager
 from database import get_session
 from typing import Optional
+import logging
 
 router = APIRouter(prefix="/servers", tags=["servers"])
 templates = Jinja2Templates(directory="templates")
 
 docker_mgr: Optional[SidecarManager] = None
 lifecycle_mgr: Optional[LifecycleManager] = None
+logger = logging.getLogger(__name__)
 
 
 def set_managers(dmgr: SidecarManager, lmgr: LifecycleManager):
@@ -23,17 +25,28 @@ def set_managers(dmgr: SidecarManager, lmgr: LifecycleManager):
 
 
 async def require_auth(request: Request, session: Session = Depends(get_session)):
+    from services.auth import get_current_user
+    from fastapi.security.utils import get_authorization_scheme_param
+    
     token = request.cookies.get("access_token")
     if not token:
-        return RedirectResponse(url="/auth/login")
+        logger.warning("No access_token cookie found")
+        raise HTTPException(status_code=303, headers={"Location": "/auth/login"})
     
     try:
         if token.startswith("Bearer "):
             token = token[7:]
-        user = await get_current_active_user(token, session)
+        user = await get_current_user(token, session)
         return user
-    except Exception:
-        return RedirectResponse(url="/auth/login")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authentication failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=303,
+            detail=f"Authentication failed: {str(e)}",
+            headers={"Location": "/auth/login"}
+        )
 
 
 @router.get("/create", summary="Create Server Page", description="Display form to create a new game server.")

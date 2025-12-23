@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security.utils import get_authorization_scheme_param
@@ -139,6 +139,20 @@ app = FastAPI(
 
 app.openapi = custom_openapi
 
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code == 303 and "Location" in exc.headers:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=exc.headers["Location"], status_code=303)
+    
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "error": str(exc.detail)}
+    )
+
+
 templates = Jinja2Templates(directory="templates")
 
 app.include_router(auth.router)
@@ -149,11 +163,15 @@ app.include_router(webhooks.router)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {exc}")
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
     from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error"}
+        content={
+            "detail": "Internal server error",
+            "error": str(exc),
+            "type": type(exc).__name__
+        }
     )
 
 
