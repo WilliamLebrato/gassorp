@@ -98,6 +98,7 @@ async def lifespan(app: FastAPI):
         from core.plugin_loader import PluginLoader
         global plugin_loader
         plugin_loader = PluginLoader(games_dir="games")
+        plugin_loader._load_plugins_sync()
         admin.set_plugin_loader(plugin_loader)
         logger.info(f"Loaded {len(plugin_loader.get_all_plugins())} game plugins")
     except Exception as e:

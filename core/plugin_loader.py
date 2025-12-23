@@ -36,9 +36,29 @@ class PluginLoader:
     def __init__(self, games_dir: str = "games"):
         self.games_dir = Path(games_dir)
         self.plugins: Dict[str, PluginInfo] = {}
-        self._load_plugins()
     
-    def _load_plugins(self):
+    async def initialize(self):
+        """Async initialization method to run self-tests"""
+        await self._load_plugins()
+    
+    def _load_plugins_sync(self):
+        """Synchronous plugin loading without self-tests"""
+        if not self.games_dir.exists():
+            logger.warning(f"Games directory {self.games_dir} does not exist")
+            return
+        
+        for plugin_dir in self.games_dir.iterdir():
+            if not plugin_dir.is_dir() or plugin_dir.name.startswith('_'):
+                continue
+            
+            plugin_id = plugin_dir.name
+            plugin_info = self._load_plugin_sync(plugin_dir)
+            
+            if plugin_info:
+                self.plugins[plugin_id] = plugin_info
+                logger.info(f"Loaded plugin: {plugin_id} - {plugin_info.status.value}")
+    
+    async def _load_plugins(self):
         """Scan and load all game plugins from games/ directory"""
         if not self.games_dir.exists():
             logger.warning(f"Games directory {self.games_dir} does not exist")
@@ -49,14 +69,14 @@ class PluginLoader:
                 continue
             
             plugin_id = plugin_dir.name
-            plugin_info = self._load_plugin(plugin_dir)
+            plugin_info = await self._load_plugin(plugin_dir)
             
             if plugin_info:
                 self.plugins[plugin_id] = plugin_info
                 logger.info(f"Loaded plugin: {plugin_id} - {plugin_info.status.value}")
     
-    def _load_plugin(self, plugin_dir: Path) -> Optional[PluginInfo]:
-        """Load a single plugin from its directory"""
+    async def _load_plugin(self, plugin_dir: Path) -> Optional[PluginInfo]:
+        """Load a single plugin from its directory (async with self-test)"""
         plugin_id = plugin_dir.name
         config_file = plugin_dir / "config.json"
         adapter_file = plugin_dir / "adapter.py"
@@ -91,10 +111,55 @@ class PluginLoader:
                 return PluginInfo(
                     id=plugin_id,
                     status=status,
-                    display_name=config.get('display_name', self._format_display_name(plugin_id)),
+                    display_name=config.display_name or self._format_display_name(plugin_id),
                     config=config,
                     adapter=adapter,
                     test_results=test_results
+                )
+            
+        except Exception as e:
+            logger.error(f"Failed to load plugin {plugin_id}: {str(e)}")
+            return PluginInfo(
+                id=plugin_id,
+                status=PluginStatus.ERROR,
+                display_name=self._format_display_name(plugin_id),
+                error_message=str(e)
+            )
+    
+    def _load_plugin_sync(self, plugin_dir: Path) -> Optional[PluginInfo]:
+        """Load a single plugin without self-test (for sync initialization)"""
+        plugin_id = plugin_dir.name
+        config_file = plugin_dir / "config.json"
+        adapter_file = plugin_dir / "adapter.py"
+        
+        if not config_file.exists():
+            return PluginInfo(
+                id=plugin_id,
+                status=PluginStatus.ERROR,
+                display_name=self._format_display_name(plugin_id),
+                error_message="config.json not found"
+            )
+        
+        if not adapter_file.exists():
+            return PluginInfo(
+                id=plugin_id,
+                status=PluginStatus.DRAFT,
+                display_name=self._format_display_name(plugin_id),
+                error_message="adapter.py not found (Draft mode)"
+            )
+        
+        try:
+            config = self._load_config(config_file)
+            adapter = self._load_adapter(adapter_file, plugin_id)
+            
+            if adapter:
+                return PluginInfo(
+                    id=plugin_id,
+                    status=PluginStatus.ACTIVE,
+                    display_name=config.display_name or self._format_display_name(plugin_id),
+                    config=config,
+                    adapter=adapter,
+                    test_results=None
                 )
             
         except Exception as e:
@@ -120,7 +185,8 @@ class PluginLoader:
             description=data.get('description'),
             icon_url=data.get('icon_url'),
             wallpaper_url=data.get('wallpaper_url'),
-            env_vars_schema=data.get('env_vars_schema')
+            env_vars_schema=data.get('env_vars_schema'),
+            display_name=data.get('display_name')
         )
     
     def _load_adapter(self, adapter_file: Path, plugin_id: str) -> Optional[GameInterface]:

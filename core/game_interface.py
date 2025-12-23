@@ -14,6 +14,7 @@ class GameConfig:
     icon_url: Optional[str] = None
     wallpaper_url: Optional[str] = None
     env_vars_schema: Optional[Dict] = None
+    display_name: Optional[str] = None
 
 
 @dataclass
