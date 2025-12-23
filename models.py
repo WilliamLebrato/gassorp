@@ -26,12 +26,12 @@ class TransactionType(str, Enum):
 class User(SQLModel, table=True):
     __tablename__ = "users"
     
-    id: Optional[int] = Field(default=None, primary_key=True)
-    email: str = Field(unique=True, index=True)
-    provider: Provider = Field(default=Provider.GOOGLE)
-    credits: float = Field(default=0.0)
-    is_admin: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    id: Optional[int] = Field(default=None, primary_key=True, description="Unique user identifier")
+    email: str = Field(unique=True, index=True, description="User email address")
+    provider: Provider = Field(default=Provider.GOOGLE, description="OAuth provider used for authentication")
+    credits: float = Field(default=0.0, description="Available credits for server usage")
+    is_admin: bool = Field(default=False, description="Admin privileges")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Account creation timestamp")
     
     servers: list["Server"] = Relationship(back_populates="user")
     transactions: list["Transaction"] = Relationship(back_populates="user")
@@ -55,24 +55,24 @@ class GameImage(SQLModel, table=True):
 class Server(SQLModel, table=True):
     __tablename__ = "servers"
     
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id")
-    game_image_id: int = Field(foreign_key="game_images.id")
+    id: Optional[int] = Field(default=None, primary_key=True, description="Unique server identifier")
+    user_id: int = Field(foreign_key="users.id", description="Owner user ID")
+    game_image_id: int = Field(foreign_key="game_images.id", description="Game image ID")
     
-    friendly_name: str
-    env_vars: dict = Field(sa_column=Column(JSON), default={})
+    friendly_name: str = Field(description="Human-readable server name")
+    env_vars: dict = Field(sa_column=Column(JSON), default={}, description="Environment variables for game server")
     
-    proxy_container_id: Optional[str] = None
-    game_container_id: Optional[str] = None
-    public_port: Optional[int] = None
-    private_network_name: Optional[str] = None
+    proxy_container_id: Optional[str] = Field(default=None, description="Docker container ID for sidecar proxy")
+    game_container_id: Optional[str] = Field(default=None, description="Docker container ID for game server")
+    public_port: Optional[int] = Field(default=None, description="Public port mapped by sidecar proxy")
+    private_network_name: Optional[str] = Field(default=None, description="Docker network name")
     
-    state: ServerState = Field(default=ServerState.SLEEPING)
-    auto_sleep: bool = Field(default=True)
-    gcs_backup_path: Optional[str] = None
+    state: ServerState = Field(default=ServerState.SLEEPING, description="Current server state")
+    auto_sleep: bool = Field(default=True, description="Enable auto-hibernation after idle period")
+    gcs_backup_path: Optional[str] = Field(default=None, description="GCS path for server data backups")
     
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    last_state_change: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Server creation timestamp")
+    last_state_change: datetime = Field(default_factory=datetime.utcnow, description="Last state transition timestamp")
     
     user: User = Relationship(back_populates="servers")
     game_image: GameImage = Relationship(back_populates="servers")
@@ -92,10 +92,10 @@ class Transaction(SQLModel, table=True):
 
 
 class ServerCreate(SQLModel):
-    friendly_name: str
-    game_image_id: int
-    env_vars: Optional[dict] = None
-    auto_sleep: bool = True
+    friendly_name: str = Field(..., description="Human-readable server name", schema_extra={"example": "My Minecraft Survival"})
+    game_image_id: int = Field(..., description="Game image ID", schema_extra={"example": 1})
+    env_vars: Optional[dict] = Field(default=None, description="Environment variables for game server")
+    auto_sleep: bool = Field(default=True, description="Enable auto-hibernation after 15 mins idle")
 
 
 class ServerUpdate(SQLModel):

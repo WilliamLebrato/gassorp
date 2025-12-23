@@ -36,7 +36,7 @@ async def require_auth(request: Request, session: Session = Depends(get_session)
         return RedirectResponse(url="/auth/login")
 
 
-@router.get("/create")
+@router.get("/create", summary="Create Server Page", description="Display form to create a new game server.")
 async def create_server_page(request: Request, user: User = Depends(require_auth), session: Session = Depends(get_session)):
     game_images = session.exec(select(GameImage)).all()
     return templates.TemplateResponse("create_server.html", {
@@ -46,7 +46,7 @@ async def create_server_page(request: Request, user: User = Depends(require_auth
     })
 
 
-@router.post("/create")
+@router.post("/create", summary="Deploy New Server", description="Provisions a new game server and sidecar proxy. Requires sufficient credits.", response_description="Redirects to server detail page.")
 async def create_server(
     request: Request,
     friendly_name: str = Form(...),
@@ -82,7 +82,7 @@ async def create_server(
 from models import ServerState
 
 
-@router.get("/{server_id}")
+@router.get("/{server_id}", summary="Server Detail", description="View server details, stats, and controls.")
 async def server_detail(
     server_id: int,
     request: Request,
@@ -105,7 +105,7 @@ async def server_detail(
     })
 
 
-@router.get("/{server_id}/logs")
+@router.get("/{server_id}/logs", summary="Server Logs", description="Retrieve container logs for the game server.")
 async def server_logs(
     server_id: int,
     user: User = Depends(require_auth),
@@ -119,7 +119,7 @@ async def server_logs(
     return logs
 
 
-@router.post("/{server_id}/wake")
+@router.post("/{server_id}/wake", summary="Wake Server", description="Start a hibernating server. Requires credits.")
 async def wake_server(
     server_id: int,
     user: User = Depends(require_auth),
@@ -138,7 +138,7 @@ async def wake_server(
     return RedirectResponse(url=f"/servers/{server_id}", status_code=303)
 
 
-@router.post("/{server_id}/hibernate")
+@router.post("/{server_id}/hibernate", summary="Hibernate Server", description="Stop a running server and save state.")
 async def hibernate_server(
     server_id: int,
     user: User = Depends(require_auth),
@@ -157,7 +157,7 @@ async def hibernate_server(
     return RedirectResponse(url=f"/servers/{server_id}", status_code=303)
 
 
-@router.post("/{server_id}/backup")
+@router.post("/{server_id}/backup", summary="Backup Server", description="Export server data to GCS backup.")
 async def backup_server(
     server_id: int,
     user: User = Depends(require_auth),
@@ -177,7 +177,7 @@ async def backup_server(
     return RedirectResponse(url=f"/servers/{server_id}", status_code=303)
 
 
-@router.post("/{server_id}/delete")
+@router.post("/{server_id}/delete", summary="Delete Server", description="Permanently delete a server and its containers.")
 async def delete_server(
     server_id: int,
     user: User = Depends(require_auth),

@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.security.utils import get_authorization_scheme_param
+from fastapi.openapi.utils import get_openapi
 from contextlib import asynccontextmanager
 import logging
 import os
@@ -25,10 +27,12 @@ lifecycle_manager: LifecycleManager = None
 async def lifespan(app: FastAPI):
     init_db()
     
-    from database import Session
-    session = Session()
+    from database import get_session
+    session_gen = get_session()
+    session = next(session_gen)
     
-    existing_images = session.exec(GameImage.select()).all()
+    from sqlmodel import select
+    existing_images = session.exec(select(GameImage)).all()
     if not existing_images:
         default_images = [
             GameImage(
@@ -72,25 +76,68 @@ async def lifespan(app: FastAPI):
     backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
     gcs_bucket = os.getenv("GOOGLE_CLOUD_BUCKET", "gsp-backups")
     
-    docker_manager = SidecarManager(webhook_secret, backend_url, gcs_bucket)
-    lifecycle_manager = LifecycleManager(docker_manager, lambda: Session())
-    
-    dashboard.set_managers(docker_manager, lifecycle_manager)
-    webhooks.set_lifecycle_manager(lifecycle_manager)
-    
-    await lifecycle_manager.start()
+    try:
+        docker_manager = SidecarManager(webhook_secret, backend_url, gcs_bucket)
+        lifecycle_manager = LifecycleManager(docker_manager, lambda: next(get_session()))
+        
+        dashboard.set_managers(docker_manager, lifecycle_manager)
+        webhooks.set_lifecycle_manager(lifecycle_manager)
+        
+        await lifecycle_manager.start()
+    except Exception as e:
+        logger.warning(f"Could not initialize Docker manager: {e}")
+        docker_manager = None
+        lifecycle_manager = None
     
     yield
     
-    await lifecycle_manager.stop()
+    if lifecycle_manager:
+        await lifecycle_manager.stop()
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title="GSP API",
+        version="1.0.0",
+        description="API for managing Game Server Platform instances, billing, and lifecycle.",
+        routes=app.routes,
+        contact={
+            "name": "GSP Dev Team",
+            "email": "admin@gsp.dev"
+        }
+    )
+    
+    openapi_schema["components"]["securitySchemes"] = {
+        "cookieAuth": {
+            "type": "apiKey",
+            "in": "cookie",
+            "name": "access_token",
+            "description": "JWT token stored in HttpOnly cookie for authentication"
+        }
+    }
+    
+    for path in openapi_schema["paths"].values():
+        for operation in path.values():
+            if "security" not in operation or operation["security"] is None:
+                operation["security"] = [{"cookieAuth": []}]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
 
 
 app = FastAPI(
-    title="Game Server Platform",
-    description="Sidecar-based game server orchestrator",
+    title="GSP API",
+    description="API for managing Game Server Platform instances, billing, and lifecycle.",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
+
+app.openapi = custom_openapi
 
 templates = Jinja2Templates(directory="templates")
 
