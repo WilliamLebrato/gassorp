@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Game Catalog - GSP{% endblock %}
+
+{% block content %}
+<div class="p-8 pattern-bg">
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gsp-text mb-2">Game Catalog</h1>
+            <p class="text-gsp-text-muted">Manage available game images</p>
+        </div>
+        <a href="/admin/games/new" class="btn-orange inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-medium">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            <span>Add Game</span>
+        </a>
+    </div>
+    
+    {% if games %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for game in games %}
+        <div class="glass-card rounded-xl overflow-hidden">
+            <div class="relative h-40 bg-cover bg-center" style="background-image: url('{{ game.wallpaper_url }}');">
+                <div class="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent"></div>
+                <div class="absolute bottom-4 left-4">
+                    <h3 class="text-xl font-bold text-gsp-text">{{ game.friendly_name }}</h3>
+                </div>
+            </div>
+            
+            <div class="p-4 space-y-3">
+                <div class="flex items-center gap-2 text-sm text-gsp-text-muted">
+                    <i data-lucide="package" class="w-4 h-4"></i>
+                    <span class="truncate">{{ game.docker_image }}</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="flex items-center gap-2 text-gsp-text-muted">
+                        <i data-lucide="cpu" class="w-4 h-4"></i>
+                        <span>{{ game.min_cpu }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gsp-text-muted">
+                        <i data-lucide="memory" class="w-4 h-4"></i>
+                        <span>{{ game.min_ram }}</span>
+                    </div>
+                </div>
+                
+                {% if game.description %}
+                <p class="text-sm text-gsp-text-muted line-clamp-2">{{ game.description }}</p>
+                {% endif %}
+                
+                <div class="flex gap-2 pt-2">
+                    <a href="/admin/games/{{ game.id }}/edit" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gsp-light hover:bg-gsp-gray rounded-lg text-gsp-text font-medium transition-colors">
+                        <i data-lucide="edit-2" class="w-4 h-4"></i>
+                        <span>Edit</span>
+                    </a>
+                    <form action="/admin/games/{{ game.id }}/delete" method="POST" class="flex-1" onsubmit="return confirm('Are you sure you want to delete {{ game.friendly_name }}?');">
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 font-medium transition-colors">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            <span>Delete</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="flex flex-col items-center justify-center py-20 text-center">
+        <div class="w-32 h-32 mb-6 rounded-full bg-gsp-light flex items-center justify-center">
+            <i data-lucide="gamepad-2" class="w-16 h-16 text-gsp-text-muted"></i>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-gsp-text mb-2">No games in catalog</h2>
+        <p class="text-gsp-text-muted mb-6 max-w-md">Add your first game image to start deploying servers.</p>
+        
+        <a href="/admin/games/new" class="btn-orange inline-flex items-center gap-3 px-8 py-4 rounded-xl text-white font-semibold text-lg">
+            <i data-lucide="plus-circle" class="w-6 h-6"></i>
+            <span>Add Your First Game</span>
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

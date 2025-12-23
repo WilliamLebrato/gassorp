@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{% if game %}Edit Game{% else %}New Game{% endif %} - GSP{% endblock %}
+
+{% block content %}
+<div class="p-8 pattern-bg">
+    <div class="mb-8">
+        <div class="flex items-center gap-4 mb-2">
+            <a href="/admin/games" class="text-gsp-orange hover:text-gsp-orange-dark">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <h1 class="text-3xl font-bold text-gsp-text">{% if game %}Edit Game{% else %}Add New Game{% endif %}</h1>
+        </div>
+        <p class="text-gsp-text-muted">{% if game %}Update game image configuration{% else %}Add a new game image to the catalog{% endif %}</p>
+    </div>
+    
+    <div class="max-w-2xl">
+        <form action="{% if game %}/admin/games/{{ game.id }}/edit{% else %}/admin/games{% endif %}" method="POST" class="glass-card rounded-xl p-8 space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gsp-text mb-2">Friendly Name *</label>
+                <input type="text" name="friendly_name" value="{% if game %}{{ game.friendly_name }}{% endif %}" required
+                    class="w-full px-4 py-3 rounded-lg border border-gsp-border focus:border-gsp-orange focus:ring-2 focus:ring-gsp-orange/20 outline-none transition-all"
+                    placeholder="e.g., Minecraft Server">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gsp-text mb-2">Docker Image *</label>
+                <input type="text" name="docker_image" value="{% if game %}{{ game.docker_image }}{% endif %}" required
+                    class="w-full px-4 py-3 rounded-lg border border-gsp-border focus:border-gsp-orange focus:ring-2 focus:ring-gsp-orange/20 outline-none transition-all"
+                    placeholder="e.g., itzg/minecraft-server:latest">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gsp-text mb-2">Default Port *</label>
+                    <input type="number" name="default_internal_port" value="{% if game %}{{ game.default_internal_port }}{% endif %}" required
+                        class="w-full px-4 py-3 rounded-lg border border-gsp-border focus:border-gsp-orange focus:ring-2 focus:ring-gsp-orange/20 outline-none transition-all"
+                        placeholder="25565">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gsp-text mb-2">Protocol</label>
+                    <select name="protocol" class="w-full px-4 py-3 rounded-lg border border-gsp-border focus:border-gsp-orange focus:ring-2 focus:ring-gsp-orange/20 outline-none transition-all">
+                        <option value="tcp" {% if game and game.protocol == 'tcp' %}selected{% endif %}>TCP</option>
+                        <option value="udp" {% if game and game.protocol == 'udp' %}selected{% endif %}>UDP</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gsp-text mb-2">Min RAM *</label>
+                    <input type="text" name="min_ram" value="{% if game %}{{ game.min_ram }}{% endif %}" required
+                        class="w-full px-4 py-3 rounded-lg border border-gsp-border focus:border-gsp-orange focus:ring-2 focus:ring-gsp-orange/20 outline-none transition-all"
+                        placeholder="1G">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gsp-text mb-2">Min CPU *</label>
+                    <input type="text" name="min_cpu" value="{% if game %}{{ game.min_cpu }}{% endif %}" required
+                        class="w-full px-4 py-3 rounded-lg border border-gsp-border focus:border-gsp-orange focus:ring-2 focus:ring-gsp-orange/20 outline-none transition-all"
+                        placeholder="0.5">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gsp-text mb-2">Description</label>
+                <textarea name="description" rows="3"
+                    class="w-full px-4 py-3 rounded-lg border border-gsp-border focus:border-gsp-orange focus:ring-2 focus:ring-gsp-orange/20 outline-none transition-all resize-none"
+                    placeholder="Brief description of the game...">{% if game %}{{ game.description }}{% endif %}</textarea>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gsp-text mb-2">Icon URL</label>
+                    <input type="url" name="icon_url" value="{% if game %}{{ game.icon_url }}{% endif %}"
+                        class="w-full px-4 py-3 rounded-lg border border-gsp-border focus:border-gsp-orange focus:ring-2 focus:ring-gsp-orange/20 outline-none transition-all"
+                        placeholder="https://example.com/icon.png">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gsp-text mb-2">Wallpaper URL</label>
+                    <input type="url" name="wallpaper_url" value="{% if game %}{{ game.wallpaper_url }}{% endif %}"
+                        class="w-full px-4 py-3 rounded-lg border border-gsp-border focus:border-gsp-orange focus:ring-2 focus:ring-gsp-orange/20 outline-none transition-all"
+                        placeholder="https://example.com/wallpaper.jpg">
+                </div>
+            </div>
+            
+            <div class="flex gap-3 pt-4 border-t border-gsp-border">
+                <a href="/admin/games" class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gsp-light hover:bg-gsp-gray rounded-lg text-gsp-text font-medium transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                    <span>Cancel</span>
+                </a>
+                <button type="submit" class="flex-1 btn-orange flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>{% if game %}Save Changes{% else %}Add Game{% endif %}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

@@ -12,13 +12,22 @@
                 extend: {
                     colors: {
                         gsp: {
-                            dark: '#0f0f1e',
-                            darker: '#0a0a14',
-                            card: '#16213e',
-                            primary: '#4a9eff',
-                            secondary: '#764ba2',
-                            accent: '#667eea'
+                            white: '#ffffff',
+                            offwhite: '#f8f9fa',
+                            light: '#f1f3f5',
+                            gray: '#e9ecef',
+                            orange: '#ff6b35',
+                            'orange-light': '#ff8c5a',
+                            'orange-dark': '#e85d2a',
+                            text: '#212529',
+                            'text-muted': '#6c757d',
+                            border: '#dee2e6'
                         }
+                    },
+                    backgroundImage: {
+                        'pattern-dots': 'radial-gradient(circle, rgba(255,107,53,0.1) 1px, transparent 1px)',
+                        'pattern-grid': 'linear-gradient(rgba(255,107,53,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,107,53,0.05) 1px, transparent 1px)',
+                        'pattern-circles': 'radial-gradient(circle at 25% 25%, rgba(255,107,53,0.08) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,107,53,0.08) 0%, transparent 50%)'
                     }
                 }
             }
@@ -29,7 +38,12 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
+            background: #f8f9fa;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(255,107,53,0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255,107,53,0.03) 0%, transparent 50%),
+                radial-gradient(circle, rgba(255,107,53,0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 20px 20px;
             min-height: 100vh;
         }
         
@@ -38,9 +52,15 @@
         }
         
         .glass-card {
-            background: rgba(22, 33, 62, 0.8);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 107, 53, 0.1);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+        }
+        
+        .glass-card:hover {
+            border-color: rgba(255, 107, 53, 0.3);
+            box-shadow: 0 8px 32px rgba(255, 107, 53, 0.15);
         }
         
         .pulse-glow {
@@ -48,70 +68,96 @@
         }
         
         @keyframes pulse-glow {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .5; }
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.4); }
+            50% { opacity: .5; box-shadow: 0 0 0 8px rgba(255, 107, 53, 0); }
         }
         
         .sidebar-link {
             transition: all 0.3s ease;
+            border-left: 3px solid transparent;
         }
         
         .sidebar-link:hover {
             transform: translateX(5px);
+            border-left-color: #ff6b35;
+        }
+        
+        .sidebar-link.active {
+            background: linear-gradient(90deg, rgba(255,107,53,0.1) 0%, transparent 100%);
+            border-left-color: #ff6b35;
+            color: #ff6b35;
+        }
+        
+        .btn-orange {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-orange:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+        }
+        
+        .pattern-bg {
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255,107,53,0.03) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(255,107,53,0.03) 0%, transparent 50%),
+                radial-gradient(circle, rgba(255,107,53,0.04) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 24px 24px;
         }
     </style>
 </head>
-<body class="text-gray-100">
+<body class="text-gsp-text">
     <div class="flex min-h-screen">
         {% if user %}
-        <aside class="w-64 bg-gsp-darker border-r border-gray-800 flex flex-col fixed h-full z-50">
-            <div class="p-6 border-b border-gray-800">
-                <h1 class="text-2xl font-bold bg-gradient-to-r from-gsp-primary to-gsp-secondary bg-clip-text text-transparent">
-                    GSP
+        <aside class="w-64 bg-white border-r border-gsp-border flex flex-col fixed h-full z-50 shadow-sm">
+            <div class="p-6 border-b border-gsp-border">
+                <h1 class="text-2xl font-bold">
+                    <span class="text-gsp-orange">G</span>SP
                 </h1>
-                <p class="text-gray-500 text-sm mt-1">Game Server Platform</p>
+                <p class="text-gsp-text-muted text-sm mt-1">Game Server Platform</p>
             </div>
             
             <nav class="flex-1 p-4 space-y-2">
-                <a href="/dashboard" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg bg-gsp-card text-gsp-primary">
+                <a href="/dashboard" class="sidebar-link {% if request.url.path == '/dashboard' %}active{% endif %} flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gsp-light text-gsp-text-muted hover:text-gsp-orange">
                     <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
                     <span>Dashboard</span>
                 </a>
                 
-                <a href="/servers/create" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gsp-card text-gray-400 hover:text-gsp-primary">
+                <a href="/servers/create" class="sidebar-link {% if request.url.path == '/servers/create' %}active{% endif %} flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gsp-light text-gsp-text-muted hover:text-gsp-orange">
                     <i data-lucide="plus-circle" class="w-5 h-5"></i>
                     <span>Create Server</span>
                 </a>
                 
-                <a href="/billing" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gsp-card text-gray-400 hover:text-gsp-primary">
+                <a href="/billing" class="sidebar-link {% if request.url.path == '/billing' %}active{% endif %} flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gsp-light text-gsp-text-muted hover:text-gsp-orange">
                     <i data-lucide="credit-card" class="w-5 h-5"></i>
                     <span>Billing</span>
                 </a>
                 
                 {% if user.is_admin %}
                 <div class="pt-4 pb-2">
-                    <p class="px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Admin</p>
+                    <p class="px-4 text-xs font-semibold text-gsp-text-muted uppercase tracking-wider">Admin</p>
                 </div>
                 
-                <a href="/admin/games" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gsp-card text-gray-400 hover:text-gsp-secondary">
+                <a href="/admin/games" class="sidebar-link {% if '/admin/games' in request.url.path %}active{% endif %} flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gsp-light text-gsp-text-muted hover:text-gsp-orange">
                     <i data-lucide="settings" class="w-5 h-5"></i>
                     <span>Game Catalog</span>
                 </a>
                 {% endif %}
             </nav>
             
-            <div class="p-4 border-t border-gray-800">
+            <div class="p-4 border-t border-gsp-border">
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gsp-primary to-gsp-secondary flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gsp-orange to-gsp-orange-light flex items-center justify-center">
                         <span class="text-white font-bold">{{ user.email[0]|upper }}</span>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium truncate">{{ user.email }}</p>
-                        <p class="text-xs text-gray-500">${{ user.credits|round(2) }} credits</p>
+                        <p class="text-sm font-medium truncate text-gsp-text">{{ user.email }}</p>
+                        <p class="text-xs text-gsp-text-muted">${{ user.credits|round(2) }} credits</p>
                     </div>
                 </div>
                 
-                <a href="/auth/logout" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors">
+                <a href="/auth/logout" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-50 text-gsp-text-muted hover:text-red-500 transition-colors">
                     <i data-lucide="log-out" class="w-5 h-5"></i>
                     <span>Logout</span>
                 </a>

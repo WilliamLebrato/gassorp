@@ -1,61 +1,103 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Create Server - GSP</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; }
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        .header { padding: 20px 0; border-bottom: 1px solid #333; margin-bottom: 30px; }
-        .nav a { color: #4a9eff; text-decoration: none; }
-        .form { background: #16213e; padding: 30px; border-radius: 10px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; color: #aaa; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #333; border-radius: 5px; background: #0f0f1e; color: #fff; font-size: 14px; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #4a9eff; }
-        .btn { padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
-        .btn-primary { background: #4a9eff; color: white; }
-        .btn-secondary { background: #333; color: #fff; }
-        .btn:hover { opacity: 0.9; }
-        .game-option { padding: 10px; border: 1px solid #333; border-radius: 5px; margin-bottom: 10px; cursor: pointer; }
-        .game-option:hover { border-color: #4a9eff; }
-        .game-option h4 { color: #4a9eff; margin-bottom: 5px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Create New Server</h1>
-            <div class="nav">
-                <a href="/dashboard">Cancel</a>
-            </div>
+{% extends "base.html" %}
+
+{% block title %}Create Server - GSP{% endblock %}
+
+{% block content %}
+<div class="p-8 pattern-bg">
+    <div class="mb-8">
+        <div class="flex items-center gap-4 mb-2">
+            <a href="/dashboard" class="text-gsp-orange hover:text-gsp-orange-dark">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <h1 class="text-3xl font-bold text-gsp-text">Create New Server</h1>
         </div>
-        
-        <form method="POST" class="form">
-            <div class="form-group">
-                <label>Server Name</label>
-                <input type="text" name="friendly_name" required placeholder="My Awesome Server">
+        <p class="text-gsp-text-muted">Deploy a new game server in seconds</p>
+    </div>
+    
+    <div class="max-w-4xl">
+        <form method="POST" class="space-y-8">
+            <div class="glass-card rounded-xl p-8">
+                <h2 class="text-xl font-semibold text-gsp-text mb-6 flex items-center gap-2">
+                    <i data-lucide="server" class="w-5 h-5 text-gsp-orange"></i>
+                    Server Configuration
+                </h2>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gsp-text mb-2">Server Name *</label>
+                    <input type="text" name="friendly_name" required placeholder="My Awesome Server"
+                        class="w-full px-4 py-3 rounded-lg border border-gsp-border focus:border-gsp-orange focus:ring-2 focus:ring-gsp-orange/20 outline-none transition-all">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gsp-text mb-4">Select Game *</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for image in game_images %}
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="game_image_id" value="{{ image.id }}" required
+                                class="peer sr-only">
+                            <div class="p-4 rounded-lg border-2 border-gsp-border hover:border-gsp-orange/50 peer-checked:border-gsp-orange peer-checked:bg-gsp-light transition-all">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-12 h-12 rounded-lg bg-gsp-light flex items-center justify-center overflow-hidden">
+                                        <img src="{{ image.icon_url }}" alt="{{ image.friendly_name }}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <i data-lucide="gamepad-2" class="w-6 h-6 text-gsp-text-muted hidden"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-semibold text-gsp-text truncate">{{ image.friendly_name }}</h4>
+                                        <p class="text-sm text-gsp-text-muted truncate">{{ image.docker_image }}</p>
+                                        <div class="flex items-center gap-3 mt-2 text-xs text-gsp-text-muted">
+                                            <span class="flex items-center gap-1">
+                                                <i data-lucide="cpu" class="w-3 h-3"></i>
+                                                {{ image.min_cpu }}
+                                            </span>
+                                            <span class="flex items-center gap-1">
+                                                <i data-lucide="memory" class="w-3 h-3"></i>
+                                                {{ image.min_ram }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label>Game Type</label>
-                <select name="game_image_id" required>
-                    {% for image in game_images %}
-                    <option value="{{ image.id }}">{{ image.friendly_name }}</option>
-                    {% endfor %}
-                </select>
+            <div class="glass-card rounded-xl p-8">
+                <h2 class="text-xl font-semibold text-gsp-text mb-6 flex items-center gap-2">
+                    <i data-lucide="settings" class="w-5 h-5 text-gsp-orange"></i>
+                    Server Settings
+                </h2>
+                
+                <div class="space-y-4">
+                    <label class="flex items-center gap-4 p-4 rounded-lg border border-gsp-border hover:border-gsp-orange/50 cursor-pointer transition-all">
+                        <input type="checkbox" name="auto_sleep" value="true" checked class="w-5 h-5 rounded border-gsp-border text-gsp-orange focus:ring-gsp-orange/20">
+                        <div class="flex-1">
+                            <div class="font-medium text-gsp-text">Enable Auto-Sleep</div>
+                            <div class="text-sm text-gsp-text-muted">Server will hibernate when idle to save resources</div>
+                        </div>
+                        <i data-lucide="moon" class="w-5 h-5 text-gsp-text-muted"></i>
+                    </label>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="auto_sleep" value="true" checked>
-                    Enable Auto-Sleep (server hibernates when idle)
-                </label>
+            <div class="flex gap-4">
+                <a href="/dashboard" class="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-gsp-light hover:bg-gsp-gray rounded-xl text-gsp-text font-semibold transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                    <span>Cancel</span>
+                </a>
+                <button type="submit" class="flex-1 btn-orange flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold">
+                    <i data-lucide="rocket" class="w-5 h-5"></i>
+                    <span>Create Server</span>
+                </button>
             </div>
-            
-            <button type="submit" class="btn btn-primary">Create Server</button>
-            <a href="/dashboard" class="btn btn-secondary">Cancel</a>
         </form>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

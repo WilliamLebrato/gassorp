@@ -1,65 +1,77 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Billing - GSP</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; }
-        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid #333; margin-bottom: 30px; }
-        .nav a { color: #4a9eff; text-decoration: none; margin-left: 20px; }
-        .balance-card { background: linear-gradient(135deg, #4a9eff, #4aff4a); padding: 40px; border-radius: 15px; text-align: center; margin-bottom: 30px; }
-        .balance-card h2 { font-size: 48px; margin-bottom: 10px; }
-        .btn { padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
-        .btn-primary { background: #333; color: white; }
-        .btn:hover { opacity: 0.9; }
-        table { width: 100%; background: #16213e; border-radius: 10px; overflow: hidden; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
-        th { background: #0f0f1e; color: #4a9eff; }
-        .amount-positive { color: #4aff4a; }
-        .amount-negative { color: #ff4a4a; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Billing</h1>
-            <div class="nav">
-                <a href="/dashboard">Back to Dashboard</a>
-            </div>
-        </div>
-        
-        <div class="balance-card">
-            <div style="color: rgba(0,0,0,0.7); margin-bottom: 10px;">Current Balance</div>
-            <h2>${{ "%.2f"|format(user.credits) }}</h2>
-            <form method="POST" action="/billing/add-funds" style="margin-top: 20px;">
-                <button type="submit" class="btn btn-primary">Add $10.00 (Mock)</button>
+{% extends "base.html" %}
+
+{% block title %}Billing - GSP{% endblock %}
+
+{% block content %}
+<div class="p-8 pattern-bg">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gsp-text mb-2">Billing</h1>
+        <p class="text-gsp-text-muted">Manage your account balance and view transaction history</p>
+    </div>
+    
+    <div class="mb-8">
+        <div class="glass-card rounded-2xl p-8 bg-gradient-to-br from-gsp-orange to-gsp-orange-light">
+            <div class="text-white/80 mb-2">Current Balance</div>
+            <div class="text-5xl font-bold text-white mb-6">${{ "%.2f"|format(user.credits) }}</div>
+            <form method="POST" action="/billing/add-funds">
+                <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur rounded-lg text-white font-medium transition-colors">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    <span>Add $10.00 (Mock)</span>
+                </button>
             </form>
         </div>
-        
-        <h3>Transaction History</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                    <th>Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for tx in transactions %}
-                <tr>
-                    <td>{{ tx.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td>{{ tx.type }}</td>
-                    <td>{{ tx.description or '-' }}</td>
-                    <td class="{{ 'amount-positive' if tx.amount > 0 else 'amount-negative' }}">
-                        {{ '+' if tx.amount > 0 else '' }}${{ "%.2f"|format(tx.amount) }}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
-</body>
-</html>
+    
+    <div class="glass-card rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-gsp-border">
+            <h2 class="text-xl font-semibold text-gsp-text">Transaction History</h2>
+        </div>
+        
+        {% if transactions %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gsp-light">
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gsp-text-muted">Date</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gsp-text-muted">Type</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gsp-text-muted">Description</th>
+                        <th class="px-6 py-4 text-right text-sm font-semibold text-gsp-text-muted">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gsp-border">
+                    {% for tx in transactions %}
+                    <tr class="hover:bg-gsp-light transition-colors">
+                        <td class="px-6 py-4 text-sm text-gsp-text">{{ tx.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+                                {% if tx.type == 'deposit' %} bg-green-100 text-green-700
+                                {% elif tx.type == 'charge' %} bg-red-100 text-red-700
+                                {% else %} bg-gsp-light text-gsp-text-muted{% endif %}">
+                                {{ tx.type|title }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gsp-text-muted">{{ tx.description or '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-right font-semibold
+                            {% if tx.amount > 0 %} text-green-600 {% else %} text-red-600 {% endif %}">
+                            {{ '+' if tx.amount > 0 else '' }}${{ "%.2f"|format(tx.amount) }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <i data-lucide="receipt" class="w-16 h-16 text-gsp-text-muted mx-auto mb-4"></i>
+            <p class="text-gsp-text-muted">No transactions yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

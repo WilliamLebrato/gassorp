@@ -3,62 +3,68 @@
 {% block title %}Dashboard - GSP{% endblock %}
 
 {% block content %}
-<div class="p-8">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold mb-2">My Servers</h1>
-        <p class="text-gray-400">Manage your game servers</p>
+<div class="p-8 pattern-bg">
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gsp-text mb-2">My Servers</h1>
+            <p class="text-gsp-text-muted">Manage your game servers</p>
+        </div>
+        <a href="/servers/create" class="btn-orange inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-medium">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            <span>New Server</span>
+        </a>
     </div>
     
     {% if servers %}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for server in servers %}
-        <div class="glass-card rounded-2xl overflow-hidden group hover:scale-105 transition-transform duration-300">
-            <div class="relative h-48 bg-cover bg-center" style="background-image: url('{{ server.game_image.wallpaper_url }}');">
-                <div class="absolute inset-0 bg-gradient-to-t from-gsp-darker via-gsp-darker/50 to-transparent"></div>
+        <div class="glass-card rounded-xl overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+            <div class="relative h-44 bg-cover bg-center" style="background-image: url('{{ server.game_image.wallpaper_url }}');">
+                <div class="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-transparent"></div>
                 
                 <div class="absolute top-4 right-4">
                     <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold
-                        {% if server.state == 'RUNNING' %} bg-green-500/20 text-green-400 {% elif server.state == 'SLEEPING' %} bg-orange-500/20 text-orange-400 {% else %} bg-gray-500/20 text-gray-400 {% endif %}">
+                        {% if server.state == 'RUNNING' %} bg-green-100 text-green-700 {% elif server.state == 'SLEEPING' %} bg-orange-100 text-orange-700 {% else %} bg-gray-100 text-gray-700 {% endif %}">
                         <span class="w-2 h-2 rounded-full animate-pulse"></span>
                         {{ server.state }}
                     </span>
                 </div>
                 
                 <div class="absolute bottom-4 left-4 right-4">
-                    <h3 class="text-xl font-bold text-white mb-1">{{ server.friendly_name }}</h3>
-                    <p class="text-sm text-gray-300">{{ server.game_image.friendly_name }}</p>
+                    <h3 class="text-lg font-bold text-gsp-text mb-1">{{ server.friendly_name }}</h3>
+                    <p class="text-sm text-gsp-text-muted">{{ server.game_image.friendly_name }}</p>
                 </div>
             </div>
             
-            <div class="p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2 text-sm text-gray-400">
+            <div class="p-4 space-y-3">
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-2 text-gsp-text-muted">
                         <i data-lucide="server" class="w-4 h-4"></i>
                         <span>{{ server.public_port or 'N/A' }}:{{ server.game_image.default_internal_port }}</span>
                     </div>
                     
-                    <div class="flex items-center gap-2 text-sm text-gray-400">
+                    <div class="flex items-center gap-2 text-gsp-text-muted">
                         <i data-lucide="clock" class="w-4 h-4"></i>
-                        <span>{{ server.auto_sleep }}</span>
+                        <span>{{ 'Auto' if server.auto_sleep else 'Manual' }}</span>
                     </div>
                 </div>
                 
                 <div class="flex gap-2">
-                    <a href="/servers/{{ server.id }}" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gsp-primary hover:bg-gsp-primary/80 rounded-lg font-medium transition-colors">
+                    <a href="/servers/{{ server.id }}" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gsp-light hover:bg-gsp-gray rounded-lg text-gsp-text font-medium transition-colors">
                         <i data-lucide="settings" class="w-4 h-4"></i>
                         <span>Manage</span>
                     </a>
                     
                     {% if server.state == 'SLEEPING' %}
                     <form action="/servers/{{ server.id }}/wake" method="POST" class="flex-1">
-                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors">
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 rounded-lg text-green-700 font-medium transition-colors">
                             <i data-lucide="play" class="w-4 h-4"></i>
                             <span>Start</span>
                         </button>
                     </form>
                     {% elif server.state == 'RUNNING' %}
                     <form action="/servers/{{ server.id }}/hibernate" method="POST" class="flex-1">
-                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg font-medium transition-colors">
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-50 hover:bg-orange-100 rounded-lg text-orange-700 font-medium transition-colors">
                             <i data-lucide="pause" class="w-4 h-4"></i>
                             <span>Stop</span>
                         </button>
@@ -71,18 +77,24 @@
     </div>
     {% else %}
     <div class="flex flex-col items-center justify-center py-20 text-center">
-        <div class="w-32 h-32 mb-6 rounded-full bg-gsp-card flex items-center justify-center">
-            <i data-lucide="gamepad-2" class="w-16 h-16 text-gray-600"></i>
+        <div class="w-32 h-32 mb-6 rounded-full bg-gsp-light flex items-center justify-center">
+            <i data-lucide="gamepad-2" class="w-16 h-16 text-gsp-text-muted"></i>
         </div>
         
-        <h2 class="text-2xl font-bold text-gray-300 mb-2">No servers yet</h2>
-        <p class="text-gray-500 mb-6 max-w-md">Deploy your first game server and start playing with friends in minutes.</p>
+        <h2 class="text-2xl font-bold text-gsp-text mb-2">No servers yet</h2>
+        <p class="text-gsp-text-muted mb-6 max-w-md">Deploy your first game server and start playing with friends in minutes.</p>
         
-        <a href="/servers/create" class="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-gsp-primary to-gsp-secondary hover:from-gsp-primary/80 hover:to-gsp-secondary/80 rounded-xl font-semibold text-lg transition-all transform hover:scale-105">
+        <a href="/servers/create" class="btn-orange inline-flex items-center gap-3 px-8 py-4 rounded-xl text-white font-semibold text-lg">
             <i data-lucide="plus-circle" class="w-6 h-6"></i>
             <span>Create Your First Server</span>
         </a>
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+</script>
 {% endblock %}
