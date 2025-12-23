@@ -12,7 +12,7 @@ from database import init_db, engine
 from models import GameImage
 from services.docker_manager import SidecarManager
 from services.lifecycle import LifecycleManager
-from routers import auth, dashboard, webhooks
+from routers import auth, dashboard, webhooks, admin
 
 load_dotenv()
 
@@ -159,6 +159,7 @@ app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(dashboard.router_main)
 app.include_router(webhooks.router)
+app.include_router(admin.router)
 
 
 @app.exception_handler(Exception)

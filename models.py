@@ -48,6 +48,8 @@ class GameImage(SQLModel, table=True):
     min_cpu: str
     protocol: str = Field(default="tcp")
     description: Optional[str] = None
+    icon_url: str = Field(default="/static/img/default_icon.png")
+    wallpaper_url: str = Field(default="/static/img/default_wallpaper.jpg")
     
     servers: list["Server"] = Relationship(back_populates="game_image")
 

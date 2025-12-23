@@ -1,66 +1,88 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>GSP Dashboard</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid #333; margin-bottom: 30px; }
-        .nav { display: flex; gap: 20px; align-items: center; }
-        .nav a { color: #4a9eff; text-decoration: none; }
-        .nav a:hover { text-decoration: underline; }
-        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
-        .btn-primary { background: #4a9eff; color: white; }
-        .btn-danger { background: #ff4a4a; color: white; }
-        .btn-success { background: #4aff4a; color: white; }
-        .btn:hover { opacity: 0.9; }
-        .server-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .server-card { background: #16213e; padding: 20px; border-radius: 10px; border: 1px solid #333; }
-        .server-card h3 { margin-bottom: 10px; color: #4a9eff; }
-        .status { display: inline-block; padding: 5px 10px; border-radius: 15px; font-size: 12px; margin-bottom: 15px; }
-        .status-running { background: #4aff4a; color: #000; }
-        .status-sleeping { background: #ffaa4a; color: #000; }
-        .status-starting { background: #4a9eff; color: #fff; }
-        .server-info { font-size: 14px; color: #aaa; margin-bottom: 5px; }
-        .empty-state { text-align: center; padding: 60px; color: #666; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Game Server Dashboard</h1>
-            <div class="nav">
-                <span>Credits: ${{ "%.2f"|format(user.credits) }}</span>
-                <a href="/billing">Billing</a>
-                <a href="/auth/logout">Logout</a>
-            </div>
-        </div>
-        
-        <div style="margin-bottom: 20px;">
-            <a href="/servers/create" class="btn btn-primary">Create New Server</a>
-        </div>
-        
-        {% if servers %}
-        <div class="server-grid">
-            {% for server in servers %}
-            <div class="server-card">
-                <h3>{{ server.friendly_name }}</h3>
-                <span class="status status-{{ server.state.lower() }}">{{ server.state }}</span>
-                <div class="server-info">Game: {{ server.game_image.friendly_name }}</div>
-                <div class="server-info">Port: {{ server.public_port }}</div>
-                <div style="margin-top: 15px;">
-                    <a href="/servers/{{ server.id }}" class="btn btn-primary">Manage</a>
+{% extends "base.html" %}
+
+{% block title %}Dashboard - GSP{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">My Servers</h1>
+        <p class="text-gray-400">Manage your game servers</p>
+    </div>
+    
+    {% if servers %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for server in servers %}
+        <div class="glass-card rounded-2xl overflow-hidden group hover:scale-105 transition-transform duration-300">
+            <div class="relative h-48 bg-cover bg-center" style="background-image: url('{{ server.game_image.wallpaper_url }}');">
+                <div class="absolute inset-0 bg-gradient-to-t from-gsp-darker via-gsp-darker/50 to-transparent"></div>
+                
+                <div class="absolute top-4 right-4">
+                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold
+                        {% if server.state == 'RUNNING' %} bg-green-500/20 text-green-400 {% elif server.state == 'SLEEPING' %} bg-orange-500/20 text-orange-400 {% else %} bg-gray-500/20 text-gray-400 {% endif %}">
+                        <span class="w-2 h-2 rounded-full animate-pulse"></span>
+                        {{ server.state }}
+                    </span>
+                </div>
+                
+                <div class="absolute bottom-4 left-4 right-4">
+                    <h3 class="text-xl font-bold text-white mb-1">{{ server.friendly_name }}</h3>
+                    <p class="text-sm text-gray-300">{{ server.game_image.friendly_name }}</p>
                 </div>
             </div>
-            {% endfor %}
+            
+            <div class="p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2 text-sm text-gray-400">
+                        <i data-lucide="server" class="w-4 h-4"></i>
+                        <span>{{ server.public_port or 'N/A' }}:{{ server.game_image.default_internal_port }}</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 text-sm text-gray-400">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        <span>{{ server.auto_sleep }}</span>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                    <a href="/servers/{{ server.id }}" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gsp-primary hover:bg-gsp-primary/80 rounded-lg font-medium transition-colors">
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                        <span>Manage</span>
+                    </a>
+                    
+                    {% if server.state == 'SLEEPING' %}
+                    <form action="/servers/{{ server.id }}/wake" method="POST" class="flex-1">
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors">
+                            <i data-lucide="play" class="w-4 h-4"></i>
+                            <span>Start</span>
+                        </button>
+                    </form>
+                    {% elif server.state == 'RUNNING' %}
+                    <form action="/servers/{{ server.id }}/hibernate" method="POST" class="flex-1">
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg font-medium transition-colors">
+                            <i data-lucide="pause" class="w-4 h-4"></i>
+                            <span>Stop</span>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        {% else %}
-        <div class="empty-state">
-            <h2>No servers yet</h2>
-            <p>Create your first game server to get started!</p>
-        </div>
-        {% endif %}
+        {% endfor %}
     </div>
-</body>
-</html>
+    {% else %}
+    <div class="flex flex-col items-center justify-center py-20 text-center">
+        <div class="w-32 h-32 mb-6 rounded-full bg-gsp-card flex items-center justify-center">
+            <i data-lucide="gamepad-2" class="w-16 h-16 text-gray-600"></i>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-gray-300 mb-2">No servers yet</h2>
+        <p class="text-gray-500 mb-6 max-w-md">Deploy your first game server and start playing with friends in minutes.</p>
+        
+        <a href="/servers/create" class="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-gsp-primary to-gsp-secondary hover:from-gsp-primary/80 hover:to-gsp-secondary/80 rounded-xl font-semibold text-lg transition-all transform hover:scale-105">
+            <i data-lucide="plus-circle" class="w-6 h-6"></i>
+            <span>Create Your First Server</span>
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
