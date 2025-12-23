@@ -36,8 +36,41 @@
                     document.getElementById('console').textContent = data;
                 });
         }
+        
+        async function fetchPlayerCount() {
+            const container = document.getElementById('player-count');
+            if (!container) return;
+            
+            try {
+                const response = await fetch('/servers/{{ server.id }}/players');
+                const data = await response.json();
+                
+                if (data.online) {
+                    container.textContent = `${data.current}/${data.max} Online`;
+                    
+                    const playerList = document.getElementById('player-list');
+                    if (playerList && data.players && data.players.length > 0) {
+                        playerList.innerHTML = data.players.map(p => 
+                            `<li>${p.name || 'Unknown'}</li>`
+                        ).join('');
+                        document.getElementById('players-section').style.display = 'block';
+                    }
+                } else if ('{{ server.state }}' === 'RUNNING') {
+                    container.textContent = 'Querying...';
+                } else {
+                    container.textContent = 'Offline';
+                }
+            } catch (error) {
+                container.textContent = 'N/A';
+            }
+        }
+        
         setInterval(refreshLogs, 5000);
-        window.onload = refreshLogs;
+        setInterval(fetchPlayerCount, 30000);
+        window.onload = () => {
+            refreshLogs();
+            fetchPlayerCount();
+        };
     </script>
 </head>
 <body>
@@ -89,6 +122,10 @@
                     <span class="info-label">Auto-Sleep</span>
                     <span class="info-value">{{ 'Enabled' if server.auto_sleep else 'Disabled' }}</span>
                 </div>
+                <div class="info-item">
+                    <span class="info-label">Players</span>
+                    <span class="info-value" id="player-count">Loading...</span>
+                </div>
             </div>
             <div class="info-card">
                 <h3>Resource Usage</h3>
@@ -114,6 +151,11 @@
         <div class="info-card">
             <h3>Console Output</h3>
             <div id="console" class="console">Loading logs...</div>
+        </div>
+        
+        <div class="info-card" id="players-section" style="display: none;">
+            <h3>Online Players</h3>
+            <ul id="player-list" style="list-style: none; padding: 0;"></ul>
         </div>
     </div>
 </body>

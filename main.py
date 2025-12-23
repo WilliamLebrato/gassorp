@@ -80,7 +80,10 @@ async def lifespan(app: FastAPI):
         docker_manager = SidecarManager(webhook_secret, backend_url, gcs_bucket)
         lifecycle_manager = LifecycleManager(docker_manager, lambda: next(get_session()))
         
-        dashboard.set_managers(docker_manager, lifecycle_manager)
+        from services.game_query import GameQueryService
+        game_query_service = GameQueryService()
+        
+        dashboard.set_managers(docker_manager, lifecycle_manager, game_query_service)
         webhooks.set_lifecycle_manager(lifecycle_manager)
         
         await lifecycle_manager.start()

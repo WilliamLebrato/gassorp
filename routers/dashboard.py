@@ -6,6 +6,7 @@ from models import User, Server, ServerCreate, GameImage, Transaction
 from services.auth import get_current_active_user, oauth2_scheme
 from services.docker_manager import SidecarManager
 from services.lifecycle import LifecycleManager
+from services.game_query import GameQueryService
 from database import get_session
 from typing import Optional
 import logging
@@ -15,13 +16,15 @@ templates = Jinja2Templates(directory="templates")
 
 docker_mgr: Optional[SidecarManager] = None
 lifecycle_mgr: Optional[LifecycleManager] = None
+game_query: Optional[GameQueryService] = None
 logger = logging.getLogger(__name__)
 
 
-def set_managers(dmgr: SidecarManager, lmgr: LifecycleManager):
-    global docker_mgr, lifecycle_mgr
+def set_managers(dmgr: SidecarManager, lmgr: LifecycleManager, gq: GameQueryService = None):
+    global docker_mgr, lifecycle_mgr, game_query
     docker_mgr = dmgr
     lifecycle_mgr = lmgr
+    game_query = gq or GameQueryService()
 
 
 async def require_auth(request: Request, session: Session = Depends(get_session)):
@@ -207,6 +210,47 @@ async def delete_server(
     session.commit()
     
     return RedirectResponse(url="/dashboard", status_code=303)
+
+
+@router.get("/{server_id}/players", summary="Get Player Count", description="Query live player count for a server")
+async def get_player_count(
+    server_id: int,
+    request: Request,
+    user: User = Depends(require_auth),
+    session: Session = Depends(get_session)
+):
+    server = session.get(Server, server_id)
+    if not server or server.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Server not found")
+    
+    if server.state != "RUNNING" or not game_query:
+        return JSONResponse({
+            "current": 0,
+            "max": 0,
+            "online": False
+        })
+    
+    public_ip = request.headers.get("X-Forwarded-For", "localhost")
+    host = public_ip.split(":")[0] if ":" in public_ip else public_ip
+    port = server.public_port or server.game_image.default_internal_port
+    
+    protocol = "minecraft" if "minecraft" in server.game_image.docker_image.lower() else "tcp"
+    
+    player_info = await game_query.get_player_count(host, port, protocol)
+    
+    if player_info:
+        return JSONResponse({
+            "current": player_info.current,
+            "max": player_info.max,
+            "online": True,
+            "players": player_info.players
+        })
+    
+    return JSONResponse({
+        "current": 0,
+        "max": 0,
+        "online": False
+    })
 
 
 from fastapi import APIRouter

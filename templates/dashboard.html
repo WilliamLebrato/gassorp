@@ -43,9 +43,9 @@
                         <span>{{ server.public_port or 'N/A' }}:{{ server.game_image.default_internal_port }}</span>
                     </div>
                     
-                    <div class="flex items-center gap-2 text-gsp-text-muted">
-                        <i data-lucide="clock" class="w-4 h-4"></i>
-                        <span>{{ 'Auto' if server.auto_sleep else 'Manual' }}</span>
+                    <div class="flex items-center gap-2 text-gsp-text-muted" id="players-{{ server.id }}">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span>Loading...</span>
                     </div>
                 </div>
                 
@@ -96,5 +96,40 @@
 {% block scripts %}
 <script>
     lucide.createIcons();
+    
+    async function fetchPlayerCount(serverId, serverState) {
+        const container = document.getElementById(`players-${serverId}`);
+        if (!container) return;
+        
+        if (serverState !== 'RUNNING') {
+            container.innerHTML = '<i data-lucide="users" class="w-4 h-4"></i><span>Offline</span>';
+            lucide.createIcons();
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/servers/${serverId}/players`);
+            const data = await response.json();
+            
+            if (data.online) {
+                container.innerHTML = `
+                    <i data-lucide="users" class="w-4 h-4 text-gsp-orange"></i>
+                    <span class="font-medium text-gsp-text">${data.current}/${data.max} Players</span>
+                `;
+            } else {
+                container.innerHTML = '<i data-lucide="users" class="w-4 h-4"></i><span>Querying...</span>';
+            }
+        } catch (error) {
+            container.innerHTML = '<i data-lucide="users" class="w-4 h-4"></i><span>N/A</span>';
+        }
+        
+        lucide.createIcons();
+    }
+    
+    const servers = {{ servers | tojson }};
+    servers.forEach(server => {
+        fetchPlayerCount(server.id, server.state);
+        setInterval(() => fetchPlayerCount(server.id, server.state), 30000);
+    });
 </script>
 {% endblock %}
