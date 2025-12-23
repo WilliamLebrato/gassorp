@@ -1,0 +1,73 @@
+@startuml Project Architecture
+
+!theme plain
+skinparam componentStyle rectangle
+
+package "Game Server Platform (gassorp)" {
+
+    component "main.py" as Main
+    database "database.py" as DB
+    component "models.py" as Models
+
+    package "Routers" {
+        component "auth.py" as AuthRouter
+        component "dashboard.py" as DashboardRouter
+        component "webhooks.py" as WebhookRouter
+    }
+
+    package "Services" {
+        component "lifecycle.py" as Lifecycle
+        component "docker_manager.py" as DockerMgr
+        component "auth.py" as AuthService
+    }
+
+    component "proxy_service/main.py" as Proxy
+    component "templates" as Templates
+
+    Main --> DB : uses
+    Main --> Models : imports
+    Main --> AuthRouter : includes
+    Main --> DashboardRouter : includes
+    Main --> WebhookRouter : includes
+    Main --> Lifecycle : initializes
+    Main --> Templates : uses
+
+    AuthRouter ..> AuthService : uses
+    DashboardRouter ..> Lifecycle : uses
+    DashboardRouter ..> DockerMgr : uses
+    WebhookRouter ..> Lifecycle : uses
+
+    Lifecycle --> DockerMgr : manages
+    DockerMgr --> Proxy : controls
+
+    Main ..> Models : persists
+    Lifecycle ..> Models : queries/updates
+}
+
+note right of Main
+  FastAPI Application Entry Point
+  - Initializes database
+  - Sets up managers
+  - Configures routes
+end note
+
+note right of DockerMgr
+  SidecarManager
+  - Manages Docker containers
+  - Handles proxy/game containers
+  - Webhook integration
+end note
+
+note right of Lifecycle
+  LifecycleManager
+  - Auto-sleep/wake servers
+  - Monitors activity
+  - Backup/restore operations
+end note
+
+note bottom of Models
+  SQLModel/SQLAlchemy ORM
+  Models: User, Server, GameImage, Transaction
+end note
+
+@enduml

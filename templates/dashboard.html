@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GSP Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid #333; margin-bottom: 30px; }
+        .nav { display: flex; gap: 20px; align-items: center; }
+        .nav a { color: #4a9eff; text-decoration: none; }
+        .nav a:hover { text-decoration: underline; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #4a9eff; color: white; }
+        .btn-danger { background: #ff4a4a; color: white; }
+        .btn-success { background: #4aff4a; color: white; }
+        .btn:hover { opacity: 0.9; }
+        .server-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .server-card { background: #16213e; padding: 20px; border-radius: 10px; border: 1px solid #333; }
+        .server-card h3 { margin-bottom: 10px; color: #4a9eff; }
+        .status { display: inline-block; padding: 5px 10px; border-radius: 15px; font-size: 12px; margin-bottom: 15px; }
+        .status-running { background: #4aff4a; color: #000; }
+        .status-sleeping { background: #ffaa4a; color: #000; }
+        .status-starting { background: #4a9eff; color: #fff; }
+        .server-info { font-size: 14px; color: #aaa; margin-bottom: 5px; }
+        .empty-state { text-align: center; padding: 60px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Game Server Dashboard</h1>
+            <div class="nav">
+                <span>Credits: ${{ "%.2f"|format(user.credits) }}</span>
+                <a href="/billing">Billing</a>
+                <a href="/auth/logout">Logout</a>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <a href="/servers/create" class="btn btn-primary">Create New Server</a>
+        </div>
+        
+        {% if servers %}
+        <div class="server-grid">
+            {% for server in servers %}
+            <div class="server-card">
+                <h3>{{ server.friendly_name }}</h3>
+                <span class="status status-{{ server.state.lower() }}">{{ server.state }}</span>
+                <div class="server-info">Game: {{ server.game_image.friendly_name }}</div>
+                <div class="server-info">Port: {{ server.public_port }}</div>
+                <div style="margin-top: 15px;">
+                    <a href="/servers/{{ server.id }}" class="btn btn-primary">Manage</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <h2>No servers yet</h2>
+            <p>Create your first game server to get started!</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
