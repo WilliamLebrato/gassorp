@@ -1,73 +1,187 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Form, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
-from models import User, Provider
-from services.auth import MockOAuthHandler, create_access_token
+from models import User
 from database import get_session
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
+import logging
+
+load_dotenv()
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 templates = Jinja2Templates(directory="templates")
 
+# OAuth SSO instances will be initialized in main.py and set here
+google_sso = None
+microsoft_sso = None
 
-@router.get("/login", summary="Login Page", description="Render the login page with OAuth options and dev login button.")
+
+def set_sso_providers(google, microsoft):
+    global google_sso, microsoft_sso
+    google_sso = google
+    microsoft_sso = microsoft
+
+
+@router.get("/login", summary="Login Page")
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 
-@router.post("/mock-login", summary="Mock OAuth Login", description="Authenticate user with email using mock OAuth flow.")
-async def mock_login(
+@router.get("/login/google", summary="Google OAuth Login")
+async def google_login():
+    if not google_sso:
+        raise HTTPException(status_code=503, detail="Google OAuth not configured")
+    
+    return await google_sso.get_login_redirect()
+
+
+@router.get("/callback/google", summary="Google OAuth Callback")
+async def google_callback(
     request: Request,
-    email: str = Form(...),
+    response: Response,
     session: Session = Depends(get_session)
 ):
-    user = MockOAuthHandler.authenticate_mock_user(session, email, "google")
-    if not user:
-        raise HTTPException(status_code=400, detail="Failed to create user")
+    if not google_sso:
+        raise HTTPException(status_code=503, detail="Google OAuth not configured")
     
-    access_token = create_access_token(
-        data={"sub": str(user.id)},
-        expires_delta=timedelta(days=30)
-    )
-    
-    response = RedirectResponse(url="/dashboard", status_code=303)
-    response.set_cookie(
-        key="access_token",
-        value=f"Bearer {access_token}",
-        httponly=True,
-        max_age=1800
-    )
-    return response
+    try:
+        # Get user info from Google
+        user_info = await google_sso.verify_and_process(request)
+        
+        email = user_info.email
+        provider_id = user_info.id
+        display_name = user_info.display_name
+        avatar_url = user_info.picture
+        
+        # Find or create user
+        user = session.exec(
+            select(User).where(User.email == email)
+        ).first()
+        
+        if user:
+            # Update existing user
+            user.display_name = display_name
+            user.avatar_url = avatar_url
+            if user.provider != "google":
+                user.provider = "google"
+                user.provider_id = provider_id
+        else:
+            # Create new user
+            user = User(
+                email=email,
+                display_name=display_name,
+                provider="google",
+                provider_id=provider_id,
+                avatar_url=avatar_url,
+                credits=10.0  # Free starting credits
+            )
+            session.add(user)
+        
+        session.commit()
+        session.refresh(user)
+        
+        # Create JWT token
+        from services.auth import create_access_token
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(days=30)
+        )
+        
+        # Set cookie and redirect
+        redirect = RedirectResponse(url="/dashboard", status_code=303)
+        redirect.set_cookie(
+            key="access_token",
+            value=f"Bearer {access_token}",
+            httponly=True,
+            max_age=30 * 24 * 60 * 60  # 30 days
+        )
+        return redirect
+        
+    except Exception as e:
+        logger.error(f"Google OAuth error: {str(e)}")
+        raise HTTPException(status_code=400, detail="Authentication failed")
 
 
-@router.get("/mock/{provider}")
-async def mock_oauth_callback(
-    provider: str,
-    state: str,
+@router.get("/login/microsoft", summary="Microsoft OAuth Login")
+async def microsoft_login():
+    if not microsoft_sso:
+        raise HTTPException(status_code=503, detail="Microsoft OAuth not configured")
+    
+    return await microsoft_sso.get_login_redirect()
+
+
+@router.get("/callback/microsoft", summary="Microsoft OAuth Callback")
+async def microsoft_callback(
+    request: Request,
+    response: Response,
     session: Session = Depends(get_session)
 ):
-    mock_email = f"user_{state}@{provider}.com"
-    user = MockOAuthHandler.authenticate_mock_user(session, mock_email, provider)
-    if not user:
-        raise HTTPException(status_code=400, detail="Failed to create user")
+    if not microsoft_sso:
+        raise HTTPException(status_code=503, detail="Microsoft OAuth not configured")
     
-    access_token = create_access_token(
-        data={"sub": str(user.id)},
-        expires_delta=timedelta(days=30)
-    )
-    
-    response = RedirectResponse(url="/dashboard", status_code=303)
-    response.set_cookie(
-        key="access_token",
-        value=f"Bearer {access_token}",
-        httponly=True,
-        max_age=1800
-    )
-    return response
+    try:
+        # Get user info from Microsoft
+        user_info = await microsoft_sso.verify_and_process(request)
+        
+        email = user_info.email
+        provider_id = user_info.id
+        display_name = user_info.display_name
+        avatar_url = user_info.picture
+        
+        # Find or create user
+        user = session.exec(
+            select(User).where(User.email == email)
+        ).first()
+        
+        if user:
+            # Update existing user
+            user.display_name = display_name
+            user.avatar_url = avatar_url
+            if user.provider != "microsoft":
+                user.provider = "microsoft"
+                user.provider_id = provider_id
+        else:
+            # Create new user
+            user = User(
+                email=email,
+                display_name=display_name,
+                provider="microsoft",
+                provider_id=provider_id,
+                avatar_url=avatar_url,
+                credits=10.0
+            )
+            session.add(user)
+        
+        session.commit()
+        session.refresh(user)
+        
+        # Create JWT token
+        from services.auth import create_access_token
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(days=30)
+        )
+        
+        # Set cookie and redirect
+        redirect = RedirectResponse(url="/dashboard", status_code=303)
+        redirect.set_cookie(
+            key="access_token",
+            value=f"Bearer {access_token}",
+            httponly=True,
+            max_age=30 * 24 * 60 * 60
+        )
+        return redirect
+        
+    except Exception as e:
+        logger.error(f"Microsoft OAuth error: {str(e)}")
+        raise HTTPException(status_code=400, detail="Authentication failed")
 
 
-@router.post("/dev-login", summary="Developer Instant Login", description="Instant login for development. Creates or retrieves admin@gsp.dev user with 1000 credits and redirects to dashboard.")
+@router.post("/dev-login", summary="Developer Instant Login")
 async def dev_login(session: Session = Depends(get_session)):
     dev_email = "admin@gsp.dev"
     
@@ -78,31 +192,35 @@ async def dev_login(session: Session = Depends(get_session)):
     if not user:
         user = User(
             email=dev_email,
-            provider=Provider.GOOGLE,
-            is_admin=True,
-            credits=1000.0
+            display_name="Dev Admin",
+            provider="dev",
+            provider_id="dev_admin_001",
+            avatar_url=None,
+            credits=1000.0,
+            is_admin=True
         )
         session.add(user)
         session.commit()
         session.refresh(user)
     
+    from services.auth import create_access_token
     access_token = create_access_token(
         data={"sub": str(user.id)},
         expires_delta=timedelta(days=30)
     )
     
-    response = RedirectResponse(url="/dashboard", status_code=303)
-    response.set_cookie(
+    redirect = RedirectResponse(url="/dashboard", status_code=303)
+    redirect.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        max_age=1800
+        max_age=30 * 24 * 60 * 60
     )
-    return response
+    return redirect
 
 
-@router.get("/logout")
+@router.post("/logout", summary="Logout")
 async def logout():
-    response = RedirectResponse(url="/auth/login")
+    response = RedirectResponse(url="/auth/login", status_code=303)
     response.delete_cookie("access_token")
     return response

@@ -28,8 +28,15 @@ class User(SQLModel, table=True):
     
     id: Optional[int] = Field(default=None, primary_key=True, description="Unique user identifier")
     email: str = Field(unique=True, index=True, description="User email address")
-    provider: Provider = Field(default=Provider.GOOGLE, description="OAuth provider used for authentication")
-    credits: float = Field(default=0.0, description="Available credits for server usage")
+    display_name: str = Field(description="User's display name")
+    
+    # OAuth Fields
+    provider: str = Field(index=True, description="OAuth provider (google, microsoft, dev)")
+    provider_id: str = Field(index=True, description="Unique ID from OAuth provider")
+    avatar_url: Optional[str] = Field(default=None, description="Profile picture URL")
+    
+    # Billing Fields
+    credits: float = Field(default=10.0, description="Available credits for server usage (starts with 10 free)")
     is_admin: bool = Field(default=False, description="Admin privileges")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Account creation timestamp")
     

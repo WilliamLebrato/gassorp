@@ -1,0 +1,48 @@
+{
+  "display_name": "Factorio",
+  "docker_image": "factoriotools/factorio:stable",
+  "default_port": 34197,
+  "min_ram": "1G",
+  "min_cpu": "1.0",
+  "protocol": "udp",
+  "description": "Factorio dedicated server with RCON support for management.",
+  "icon_url": "/static/img/factorio_icon.png",
+  "wallpaper_url": "/static/img/factorio_wallpaper.jpg",
+  "env_vars_schema": {
+    "FACTORIO_SAVE_NAME": {
+      "type": "string",
+      "default": "world",
+      "description": "Save file name"
+    },
+    "FACTORIO_MAX_PLAYERS": {
+      "type": "integer",
+      "default": 20,
+      "description": "Maximum players"
+    },
+    "FACTORIO_AUTOSAVE_INTERVAL": {
+      "type": "integer",
+      "default": 10,
+      "description": "Autosave interval in minutes"
+    },
+    "FACTORIO_AUTOSAVE_SLOTS": {
+      "type": "integer",
+      "default": 5,
+      "description": "Number of autosave slots"
+    },
+    "FACTORIO_PASSWORD": {
+      "type": "string",
+      "default": "",
+      "description": "Server password"
+    },
+    "FACTORIO_TOKEN": {
+      "type": "string",
+      "default": "",
+      "description": "Authentication token"
+    },
+    "FACTORIO_VISIBILITY": {
+      "type": "string",
+      "default": "public",
+      "description": "Server visibility (public, lan, hidden)"
+    }
+  }
+}

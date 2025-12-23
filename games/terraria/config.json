@@ -1,0 +1,43 @@
+{
+  "display_name": "Terraria",
+  "docker_image": "raysan5/tshock:latest",
+  "default_port": 7777,
+  "min_ram": "512M",
+  "min_cpu": "0.5",
+  "protocol": "tcp",
+  "description": "Terraria server with TShock for advanced management and plugin support.",
+  "icon_url": "/static/img/terraria_icon.png",
+  "wallpaper_url": "/static/img/terraria_wallpaper.jpg",
+  "env_vars_schema": {
+    "TSHOCK_PORT": {
+      "type": "integer",
+      "default": 7777,
+      "description": "Server port"
+    },
+    "TSHOCK_MAX_PLAYERS": {
+      "type": "integer",
+      "default": 8,
+      "description": "Maximum players"
+    },
+    "TSHOCK_WORLD_NAME": {
+      "type": "string",
+      "default": "World",
+      "description": "World name"
+    },
+    "TSHOCK_WORLD_SIZE": {
+      "type": "string",
+      "default": "3",
+      "description": "World size (1=small, 2=medium, 3=large)"
+    },
+    "TSHOCK_MOTD": {
+      "type": "string",
+      "default": "Welcome to my Terraria Server!",
+      "description": "Message of the Day"
+    },
+    "TSHOCK_PASSWORD": {
+      "type": "string",
+      "default": "",
+      "description": "Server password"
+    }
+  }
+}

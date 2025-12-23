@@ -24,6 +24,34 @@ docker_manager: SidecarManager = None
 lifecycle_manager: LifecycleManager = None
 plugin_loader: PluginLoader = None
 
+# Initialize SSO providers
+try:
+    from fastapi_sso.sso.google import GoogleSSO
+    from fastapi_sso.sso.microsoft import MicrosoftSSO
+    
+    google_sso = GoogleSSO(
+        client_id=os.getenv("GOOGLE_CLIENT_ID", "placeholder-id"),
+        client_secret=os.getenv("GOOGLE_CLIENT_SECRET", "placeholder-secret"),
+        redirect_uri=os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/callback/google"),
+        allow_insecure_http=True,
+        use_state=True
+    )
+    
+    microsoft_sso = MicrosoftSSO(
+        client_id=os.getenv("MICROSOFT_CLIENT_ID", "placeholder-id"),
+        client_secret=os.getenv("MICROSOFT_CLIENT_SECRET", "placeholder-secret"),
+        redirect_uri=os.getenv("MICROSOFT_REDIRECT_URI", "http://localhost:8000/auth/callback/microsoft"),
+        allow_insecure_http=True,
+        use_state=True
+    )
+    
+    auth.set_sso_providers(google_sso, microsoft_sso)
+    logger.info("OAuth providers initialized")
+except ImportError:
+    logger.warning("fastapi-sso not installed, OAuth will not be available")
+except Exception as e:
+    logger.error(f"Failed to initialize OAuth providers: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,34 +61,25 @@ async def lifespan(app: FastAPI):
     session_gen = get_session()
     session = next(session_gen)
     
-    from sqlmodel import select
     existing_images = session.exec(select(GameImage)).all()
     if not existing_images:
+        logger.info("Adding default game images")
         default_images = [
             GameImage(
                 friendly_name="Minecraft Java",
                 docker_image="itzg/minecraft-server:latest",
                 default_internal_port=25565,
-                min_ram="2g",
-                min_cpu="1.0",
+                min_ram="1G",
+                min_cpu="0.5",
                 protocol="tcp",
-                description="Official Minecraft Java Edition server"
+                description="Official Minecraft Java Edition server with support for multiple versions and modpacks."
             ),
             GameImage(
                 friendly_name="Valheim",
                 docker_image="lloesche/valheim-server:latest",
                 default_internal_port=2456,
-                min_ram="4g",
-                min_cpu="2.0",
-                protocol="udp",
-                description="Valheim dedicated server"
-            ),
-            GameImage(
-                friendly_name="Satisfactory",
-                docker_image="wolveix/satisfactory-server:latest",
-                default_internal_port=7777,
-                min_ram="8g",
-                min_cpu="4.0",
+                min_ram="2G",
+                min_cpu="1.0",
                 protocol="udp",
                 description="Satisfactory dedicated server"
             )
@@ -104,6 +123,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to load plugins: {e}")
         plugin_loader = None
+    
+    # Start billing daemon
+    try:
+        from services.billing import billing_daemon
+        asyncio.create_task(billing_daemon())
+        logger.info("Billing daemon started")
+    except Exception as e:
+        logger.error(f"Failed to start billing daemon: {e}")
     
     yield
     
