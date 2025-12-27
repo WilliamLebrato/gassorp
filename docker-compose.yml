@@ -1,0 +1,53 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - gsp-network
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./gsp.db
+      - NODE_URL=http://node-agent:8001
+      - NODE_SECRET=dev_secret
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=http://localhost:8000/auth/callback/google
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET}
+      - MICROSOFT_REDIRECT_URI=http://localhost:8000/auth/callback/microsoft
+    volumes:
+      - ./backend/data:/app/data
+      - ./gsp.db:/app/gsp.db
+    networks:
+      - gsp-network
+    restart: unless-stopped
+
+  node-agent:
+    build: ./node-agent
+    ports:
+      - "8001:8001"
+    environment:
+      - SECRET_KEY=dev_secret
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./game_data:/game_data
+    networks:
+      - gsp-network
+    restart: unless-stopped
+    privileged: true
+
+networks:
+  gsp-network:
+    driver: bridge
+
+volumes:
+  game_data:

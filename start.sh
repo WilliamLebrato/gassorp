@@ -2,26 +2,33 @@
 
 set -e
 
-echo "🎮 Game Server Platform - Startup Script"
+echo "🚀 Starting GSP Microservices..."
 
-if [ ! -f ".env" ]; then
-    echo "📝 Creating .env file from example..."
+# Copy environment file if it doesn't exist
+if [ ! -f .env ]; then
+    echo "📝 Creating .env from .env.example..."
     cp .env.example .env
-    echo "✅ .env file created. Please edit it with your configuration."
+    echo "⚠️  Please edit .env with your OAuth credentials"
 fi
 
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 is not installed. Please install Python 3.11+ first."
-    exit 1
-fi
+# Create necessary directories
+mkdir -p backend/data game_data
 
-if ! command -v docker &> /dev/null; then
-    echo "❌ Docker is not installed. Please install Docker first."
-    exit 1
-fi
+# Build and start services
+echo "🔨 Building Docker images..."
+docker-compose build
 
-echo "📦 Installing dependencies..."
-pip install -r requirements.txt
+echo "🚀 Starting services..."
+docker-compose up -d
 
-echo "🚀 Starting the server..."
-python3 main.py
+echo ""
+echo "✅ Services started!"
+echo ""
+echo "🌐 Frontend:     http://localhost:3000"
+echo "📚 Backend API:  http://localhost:8000/docs"
+echo "🤖 Node Agent:   http://localhost:8001/docs"
+echo ""
+echo "📊 View logs:    docker-compose logs -f"
+echo "🛑 Stop all:     docker-compose down"
+echo "🔄 Restart:      docker-compose restart"
+echo ""
