@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Form, status
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
-from models import User, Server, ServerCreate, GameImage, Transaction
-from services.auth import get_current_active_user, oauth2_scheme
-from services.docker_manager import SidecarManager
-from services.lifecycle import LifecycleManager
-from services.game_query import GameQueryService
-from database import get_session
+from ..models import User, Server, ServerCreate, GameImage, Transaction
+from ..services.auth import get_current_active_user, oauth2_scheme
+from ..services.docker_manager import SidecarManager
+from ..services.lifecycle import LifecycleManager
+from ..services.game_query import GameQueryService
+from ..database import get_session
 from typing import Optional
 import logging
 
@@ -28,7 +28,7 @@ def set_managers(dmgr: SidecarManager, lmgr: LifecycleManager, gq: GameQueryServ
 
 
 async def require_auth(request: Request, session: Session = Depends(get_session)):
-    from services.auth import get_current_user
+    from ..services.auth import get_current_user
     from fastapi.security.utils import get_authorization_scheme_param
     
     token = request.cookies.get("access_token")
@@ -95,7 +95,7 @@ async def create_server(
     return RedirectResponse(url=f"/servers/{server.id}", status_code=303)
 
 
-from models import ServerState
+from ..models import ServerState
 
 
 @router.get("/{server_id}", summary="Server Detail", description="View server details, stats, and controls.")

@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: gsp-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/services:/app/services
+      - ./backend/core:/app/core
+      - ./backend/games:/app/games
+      - ./backend/routers:/app/routers
+    environment:
+      - DATABASE_URL=sqlite:///./gsp.db
+      - DEV_MODE=true
+    networks:
+      - gsp-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: gsp-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.js:/app/vite.config.js
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_DEV_MODE=true
+    networks:
+      - gsp-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+networks:
+  gsp-network:
+    driver: bridge

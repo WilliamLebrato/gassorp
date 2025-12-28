@@ -16,7 +16,11 @@ export default function Navbar({ user, setUser }) {
           GSP
         </h1>
         <div style={styles.userInfo}>
-          <span>{user?.email}</span>
+          <div style={styles.balance}>
+            <span style={styles.balanceLabel}>Balance:</span>
+            <span style={styles.balanceValue}>${user?.credits?.toFixed(2) || '0.00'}</span>
+          </div>
+          <span style={styles.email}>{user?.email}</span>
           <button onClick={handleLogout} style={styles.logoutButton}>
             Logout
           </button>
@@ -51,6 +55,29 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '16px'
+  },
+  balance: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 16px',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    borderRadius: '8px',
+    border: '2px solid #a78bfa'
+  },
+  balanceLabel: {
+    color: '#e0e7ff',
+    fontSize: '14px',
+    fontWeight: '500'
+  },
+  balanceValue: {
+    color: '#ffffff',
+    fontSize: '16px',
+    fontWeight: 'bold'
+  },
+  email: {
+    color: '#a0a0a0',
+    fontSize: '14px'
   },
   logoutButton: {
     padding: '8px 16px',

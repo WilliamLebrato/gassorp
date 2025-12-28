@@ -1,7 +1,7 @@
 import httpx
 import logging
 from typing import Optional, Dict, Any
-from models import Server, GameImage
+from ..models import Server, GameImage
 
 logger = logging.getLogger(__name__)
 

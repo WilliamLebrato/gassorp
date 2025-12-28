@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlmodel import Session, select
-from models import User, Provider
+from ..models import User, Provider
 import secrets
 
 SECRET_KEY = "your-secret-key-change-this"

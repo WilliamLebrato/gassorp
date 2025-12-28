@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
-from models import User, GameImage
-from services.auth import require_admin
-from database import get_session
+from ..models import User, GameImage
+from ..services.auth import require_admin
+from ..database import get_session
 from typing import Optional
 import logging
 
@@ -22,7 +22,7 @@ def set_plugin_loader(loader):
 
 
 async def require_auth_admin(request: Request, session: Session = Depends(get_session)):
-    from services.auth import get_current_user
+    from ..services.auth import get_current_user
     
     token = request.cookies.get("access_token")
     if not token:

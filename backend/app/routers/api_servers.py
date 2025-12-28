@@ -5,10 +5,10 @@ from pydantic import BaseModel
 from typing import Optional
 import logging
 
-from models import User, Server, GameImage, ServerState
-from services.auth import get_current_user
-from services.node_client import NodeClient
-from database import get_session
+from ..models import User, Server, GameImage, ServerState
+from ..services.auth import get_current_user
+from ..services.node_client import NodeClient
+from ..database import get_session
 
 router = APIRouter(prefix="/api/servers", tags=["servers"])
 

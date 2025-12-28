@@ -1,13 +1,15 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 import os
 from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi_sso.sso.google import GoogleSSO
+from fastapi_sso.sso.microsoft import MicrosoftSSO
 
-from database import init_db, engine, get_session
-from models import GameImage, Server, User, Transaction
+from .database import init_db, engine, get_session
+from .models import GameImage, Server, User, Transaction
 from sqlmodel import select
 
 load_dotenv()
@@ -59,8 +61,8 @@ async def lifespan(app: FastAPI):
     global lifecycle_manager, plugin_loader
     
     try:
-        from services.lifecycle import LifecycleManager
-        from services.node_client import NodeClient
+        from .services.lifecycle import LifecycleManager
+        from .services.node_client import NodeClient
         
         node_url = os.getenv("NODE_URL", "http://node-agent:8001")
         node_secret = os.getenv("NODE_SECRET", "dev_secret")
@@ -69,7 +71,7 @@ async def lifespan(app: FastAPI):
         lifecycle_manager = LifecycleManager(node_client, lambda: next(get_session()))
         await lifecycle_manager.start()
         
-        from routers import api_servers
+        from .routers import api_servers
         api_servers.set_node_client(node_client)
         
         logger.info("Lifecycle manager started")
@@ -78,7 +80,7 @@ async def lifespan(app: FastAPI):
         lifecycle_manager = None
     
     try:
-        from core.plugin_loader import PluginLoader
+        from .core.plugin_loader import PluginLoader
         plugin_loader = PluginLoader(games_dir="games")
         plugin_loader._load_plugins_sync()
         logger.info(f"Loaded {len(plugin_loader.get_all_plugins())} game plugins")
@@ -87,9 +89,9 @@ async def lifespan(app: FastAPI):
         plugin_loader = None
     
     try:
-        from services.billing import billing_daemon
+        from .services.billing import billing_daemon
         import asyncio
-        asyncio.create_task(billing_daemon(lambda: next(get_session())))
+        asyncio.create_task(billing_daemon())
         logger.info("Billing daemon started")
     except Exception as e:
         logger.error(f"Failed to start billing daemon: {e}")
@@ -104,18 +106,51 @@ app = FastAPI(
     title="GSP Backend API",
     description="API for managing Game Server Platform - handles auth, billing, and orchestration",
     version="2.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json"
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://frontend:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-from routers import auth, dashboard, webhooks, admin, api_servers
+from .routers import auth, dashboard, webhooks, admin, api_servers
+
+# Initialize SSO providers if credentials are available
+google_sso = None
+microsoft_sso = None
+
+if os.getenv("GOOGLE_CLIENT_ID") and os.getenv("GOOGLE_CLIENT_SECRET"):
+    google_sso = GoogleSSO(
+        client_id=os.getenv("GOOGLE_CLIENT_ID"),
+        client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+        redirect_uri=os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/callback/google"),
+        allow_insecure_http=True
+    )
+    logger.info("Google SSO initialized")
+else:
+    logger.warning("Google OAuth credentials not found - Google login will be disabled")
+
+if os.getenv("MICROSOFT_CLIENT_ID") and os.getenv("MICROSOFT_CLIENT_SECRET"):
+    microsoft_sso = MicrosoftSSO(
+        client_id=os.getenv("MICROSOFT_CLIENT_ID"),
+        client_secret=os.getenv("MICROSOFT_CLIENT_SECRET"),
+        redirect_uri=os.getenv("MICROSOFT_REDIRECT_URI", "http://localhost:8000/auth/callback/microsoft"),
+        tenant="common",
+        allow_insecure_http=True
+    )
+    logger.info("Microsoft SSO initialized")
+else:
+    logger.warning("Microsoft OAuth credentials not found - Microsoft login will be disabled")
+
+# Set SSO providers in auth router
+auth.set_sso_providers(google_sso, microsoft_sso)
 
 app.include_router(auth.router)
 app.include_router(dashboard.router)

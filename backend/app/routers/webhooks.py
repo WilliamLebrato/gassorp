@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
-from models import WakeWebhook
-from services.lifecycle import LifecycleManager
+from ..models import WakeWebhook
+from ..services.lifecycle import LifecycleManager
 
 router = APIRouter(prefix="/api/webhook", tags=["webhooks"])
 

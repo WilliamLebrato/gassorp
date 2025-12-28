@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
-from models import User
-from database import get_session
-from datetime import timedelta
+from ..models import User
+from ..database import get_session
+from datetime import timedelta, datetime
 import os
 from dotenv import load_dotenv
 import logging
@@ -85,7 +85,7 @@ async def google_callback(
         session.refresh(user)
         
         # Create JWT token
-        from services.auth import create_access_token
+        from ..services.auth import create_access_token
         access_token = create_access_token(
             data={"sub": str(user.id)},
             expires_delta=timedelta(days=30)
@@ -160,7 +160,7 @@ async def microsoft_callback(
         session.refresh(user)
         
         # Create JWT token
-        from services.auth import create_access_token
+        from ..services.auth import create_access_token
         access_token = create_access_token(
             data={"sub": str(user.id)},
             expires_delta=timedelta(days=30)
@@ -182,7 +182,7 @@ async def microsoft_callback(
 
 
 @router.post("/dev-login", summary="Developer Instant Login")
-async def dev_login(session: Session = Depends(get_session)):
+async def dev_login(response: Response, session: Session = Depends(get_session)):
     dev_email = "admin@gsp.dev"
     
     user = session.exec(
@@ -197,26 +197,36 @@ async def dev_login(session: Session = Depends(get_session)):
             provider_id="dev_admin_001",
             avatar_url=None,
             credits=1000.0,
-            is_admin=True
+            is_admin=True,
+            created_at=datetime.utcnow()
         )
         session.add(user)
         session.commit()
         session.refresh(user)
     
-    from services.auth import create_access_token
+    from ..services.auth import create_access_token
     access_token = create_access_token(
         data={"sub": str(user.id)},
         expires_delta=timedelta(days=30)
     )
     
-    redirect = RedirectResponse(url="/dashboard", status_code=303)
-    redirect.set_cookie(
+    response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
         max_age=30 * 24 * 60 * 60
     )
-    return redirect
+    
+    return {
+        "message": "DEV login successful",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "display_name": user.display_name,
+            "credits": user.credits,
+            "is_admin": user.is_admin
+        }
+    }
 
 
 @router.post("/logout", summary="Logout")

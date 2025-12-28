@@ -1,12 +1,11 @@
 #!/bin/bash
 
-echo "🛑 Stopping GSP Microservices..."
+echo "🛑 Stopping GSP Development Environment..."
+echo ""
 
-docker-compose down
+docker-compose -f docker-compose.dev.yml down
 
 echo ""
-echo "✅ All services stopped!"
+echo "✅ All containers stopped"
 echo ""
-echo "🧹 Clean up volumes:  docker-compose down -v"
-echo "🗑️  Remove images:     docker-compose down --rmi all"
-echo ""
+echo "💾 To remove volumes as well, run: docker-compose -f docker-compose.dev.yml down -v"

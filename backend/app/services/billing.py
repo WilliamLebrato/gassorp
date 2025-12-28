@@ -2,8 +2,8 @@ import asyncio
 import logging
 from datetime import datetime
 from sqlmodel import Session, select
-from models import User, Server, Transaction, TransactionType
-from database import get_session
+from ..models import User, Server, Transaction, TransactionType
+from ..database import get_session
 from typing import Optional
 
 
@@ -39,7 +39,7 @@ async def process_billing_cycle():
         logger.info(f"Billing {len(running_servers)} running servers")
         
         # Import lifecycle manager if available
-        from main import lifecycle_manager, docker_manager
+        from ..main import lifecycle_manager, docker_manager
         
         for server in running_servers:
             try:
